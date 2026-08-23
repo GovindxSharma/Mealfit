@@ -61,11 +61,8 @@ export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
     }
   }
 
-  // 2. Official Google OAuth 2.0 Flow (accounts.google.com)
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'mealfit',
-    preferLocalhost: true,
-  });
+  // 2. Official Google OAuth 2.0 Flow (accounts.google.com for Expo Go)
+  const redirectUri = 'https://auth.expo.io/@govindxsharma/mealfit';
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
     GOOGLE_WEB_CLIENT_ID
