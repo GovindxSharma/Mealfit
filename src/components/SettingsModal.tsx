@@ -125,15 +125,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      const confirmed = typeof window !== 'undefined' ? window.confirm('Are you sure you want to log out of your MealFit account?') : true;
-      if (confirmed) {
-        logout();
-        onClose();
-      }
-      return;
-    }
-
     Alert.alert(
       'Log Out',
       'Are you sure you want to log out of your MealFit account? Your data is securely saved in the cloud.',
