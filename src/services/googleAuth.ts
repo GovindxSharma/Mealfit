@@ -1,3 +1,5 @@
+import { NativeModules } from 'react-native';
+
 export const GOOGLE_ANDROID_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
   '351938721714-op178a4jbmssutp6td8ivmdgr8pdc62e.apps.googleusercontent.com';
@@ -14,53 +16,46 @@ export interface GoogleUserProfile {
   idToken?: string;
 }
 
+export const isNativeGooglePlayServicesAvailable = (): boolean => {
+  return !!(NativeModules && NativeModules.RNGoogleSignin);
+};
+
 export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
-  try {
-    const GoogleSigninModule = require('@react-native-google-signin/google-signin');
-    if (!GoogleSigninModule || !GoogleSigninModule.GoogleSignin) {
-      throw new Error('Google Play Services module is not available in this environment');
+  // 1. In standalone APK with NativeModules.RNGoogleSignin available
+  if (isNativeGooglePlayServicesAvailable()) {
+    try {
+      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+      GoogleSignin.configure({
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        scopes: ['profile', 'email'],
+      });
+
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const signInResult = await GoogleSignin.signIn();
+
+      const dataObj = (signInResult as any)?.data || signInResult;
+      const userObj = dataObj?.user || dataObj;
+
+      const email = userObj?.email || dataObj?.email || '';
+      const fullName = userObj?.name || userObj?.givenName || dataObj?.name || 'Google Member';
+      const avatarUrl = userObj?.photo || dataObj?.photo || undefined;
+      const googleId = userObj?.id || dataObj?.id || `google_${Date.now()}`;
+      const idToken = dataObj?.idToken || (signInResult as any)?.idToken || undefined;
+
+      if (email) {
+        return {
+          email,
+          fullName,
+          avatarUrl,
+          googleId,
+          idToken,
+        };
+      }
+    } catch (err: any) {
+      console.log('[Google Auth] Native GoogleSignin caught:', err?.message || err);
     }
-
-    const { GoogleSignin, statusCodes } = GoogleSigninModule;
-
-    GoogleSignin.configure({
-      webClientId: GOOGLE_WEB_CLIENT_ID,
-      scopes: ['profile', 'email'],
-    });
-
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    const signInResult = await GoogleSignin.signIn();
-    console.log('[Google Auth] Native result received:', JSON.stringify(signInResult));
-
-    // Handle v12+ and legacy response shapes
-    let email = '';
-    let fullName = '';
-    let avatarUrl: string | undefined;
-    let googleId = '';
-    let idToken: string | undefined;
-
-    const dataObj = (signInResult as any)?.data || signInResult;
-    const userObj = dataObj?.user || dataObj;
-
-    email = userObj?.email || dataObj?.email || '';
-    fullName = userObj?.name || userObj?.givenName || dataObj?.name || 'Google Member';
-    avatarUrl = userObj?.photo || dataObj?.photo || undefined;
-    googleId = userObj?.id || dataObj?.id || `google_${Date.now()}`;
-    idToken = dataObj?.idToken || (signInResult as any)?.idToken || undefined;
-
-    if (email) {
-      return {
-        email,
-        fullName,
-        avatarUrl,
-        googleId,
-        idToken,
-      };
-    }
-
-    throw new Error('No email returned from Google Account');
-  } catch (err: any) {
-    console.error('[Google Auth] Native GoogleSignin error:', err);
-    throw err;
   }
+
+  // 2. In Expo Go development sandbox
+  throw new Error('Google Sign-In prompt');
 };

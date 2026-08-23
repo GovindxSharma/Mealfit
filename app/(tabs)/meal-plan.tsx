@@ -427,30 +427,77 @@ Generated via MealFit India App`;
         /* ================= 2. ICMR BUDGET 4-SLOT SCHEDULE ================= */
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Budget Selector Pills */}
+          {/* Interactive Indian Kirana Budget Customizer Card */}
           <View style={[styles.budgetSelectorBox, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-            <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
-              SELECT DAILY GROCERY BUDGET
-            </Text>
+            <View style={styles.budgetHeaderRow}>
+              <View style={styles.budgetTitleIconRow}>
+                <IndianRupee size={18} color={theme.primary} />
+                <Text style={[styles.budgetCardHeading, { color: theme.textPrimary }]}>
+                  Indian Kirana Budget Customizer
+                </Text>
+              </View>
+              <View style={[styles.savingsTag, { backgroundColor: theme.primaryLight }]}>
+                <Text style={[styles.savingsTagText, { color: theme.primary }]}>
+                  Saves ~₹{Math.round(budgetPerDay * 30 * 1.8)} / mo
+                </Text>
+              </View>
+            </View>
+
+            {/* Live Rupee Display & Steppers */}
+            <View style={styles.budgetCounterRow}>
+              <TouchableOpacity
+                onPress={() => setBudgetPerDay((prev) => Math.max(50, prev - 15))}
+                style={[styles.stepperBtn, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.stepperBtnText, { color: theme.textPrimary }]}>- ₹15</Text>
+              </TouchableOpacity>
+
+              <View style={styles.budgetCenterDisplay}>
+                <Text style={[styles.budgetMainAmount, { color: theme.primary }]}>
+                  ₹{budgetPerDay * 7} <Text style={{ fontSize: 13, color: theme.textSecondary }}>/ week</Text>
+                </Text>
+                <Text style={[styles.budgetDailySub, { color: theme.textSecondary }]}>
+                  (₹{budgetPerDay} / day • ₹{((budgetPerDay / 100)).toFixed(2)} per g protein)
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setBudgetPerDay((prev) => Math.min(600, prev + 15))}
+                style={[styles.stepperBtn, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.stepperBtnText, { color: theme.textPrimary }]}>+ ₹15</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Preset Budget Tier Chips */}
             <View style={styles.budgetPillsRow}>
-              {[60, 90, 120, 160].map((b) => (
+              {[
+                { label: '₹60/d (Student)', val: 60 },
+                { label: '₹90/d (Balanced)', val: 90 },
+                { label: '₹130/d (High Protein)', val: 130 },
+                { label: '₹180/d (Athlete)', val: 180 },
+              ].map((tier) => (
                 <TouchableOpacity
-                  key={b}
-                  onPress={() => setBudgetPerDay(b)}
+                  key={tier.val}
+                  onPress={() => setBudgetPerDay(tier.val)}
                   style={[
                     styles.budgetPill,
                     {
-                      backgroundColor: budgetPerDay === b ? theme.primary : 'rgba(255, 255, 255, 0.03)',
-                      borderColor: budgetPerDay === b ? theme.primary : theme.cardBorder,
+                      backgroundColor: budgetPerDay === tier.val ? theme.primary : 'rgba(255, 255, 255, 0.03)',
+                      borderColor: budgetPerDay === tier.val ? theme.primary : theme.cardBorder,
                     },
                   ]}
+                  activeOpacity={0.8}
                 >
                   <Text
                     style={[
                       styles.budgetPillText,
-                      { color: budgetPerDay === b ? (theme.isDark ? '#000000' : '#FFFFFF') : theme.textSecondary },
+                      { color: budgetPerDay === tier.val ? '#FFFFFF' : theme.textSecondary },
                     ]}
                   >
-                    ₹{b} / day
+                    {tier.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -864,22 +911,74 @@ const styles = StyleSheet.create({
   budgetSelectorBox: {
     borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
+    gap: 12,
+  },
+  budgetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  budgetTitleIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  budgetCardHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  savingsTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  savingsTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  budgetCounterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 10,
+    marginVertical: 4,
+  },
+  stepperBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  stepperBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  budgetCenterDisplay: {
+    alignItems: 'center',
+  },
+  budgetMainAmount: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  budgetDailySub: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
   },
   budgetPillsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   budgetPill: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
   },
   budgetPillText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '800',
   },
   scheduleCardsList: {

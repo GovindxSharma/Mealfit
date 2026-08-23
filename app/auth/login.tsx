@@ -2,62 +2,40 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   Image,
   Alert,
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { promptGoogleSignIn } from '../../src/services/googleAuth';
+import { promptGoogleSignIn, isNativeGooglePlayServicesAvailable } from '../../src/services/googleAuth';
 import { GoogleQuickAuthModal } from '../../src/components/GoogleQuickAuthModal';
 import { useRouter } from 'expo-router';
 import {
   Flame,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
   ArrowRight,
   ArrowLeft,
   Sparkles,
   ShieldCheck,
+  CheckCircle2,
+  Lock,
+  Utensils,
+  Dumbbell,
+  IndianRupee,
 } from 'lucide-react-native';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
-  const { loginWithEmail, loginWithGoogle } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const router = useRouter();
 
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
   const [googleLoading, setGoogleLoading] = useState<boolean>(false);
   const [showGoogleQuickModal, setShowGoogleQuickModal] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleEmailLogin = async () => {
-    if (!email.trim()) {
-      setErrorMsg('Please enter your email address');
-      return;
-    }
-    setErrorMsg(null);
-    setLoading(true);
-    try {
-      await loginWithEmail(email.trim(), password);
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Login failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleBackToApp = () => {
     router.replace('/(tabs)');
@@ -67,6 +45,11 @@ export default function LoginScreen() {
     setErrorMsg(null);
     setGoogleLoading(true);
     try {
+      if (!isNativeGooglePlayServicesAvailable()) {
+        setShowGoogleQuickModal(true);
+        setGoogleLoading(false);
+        return;
+      }
       const googleUser = await promptGoogleSignIn();
       await loginWithGoogle(googleUser);
       router.replace('/(tabs)');
@@ -82,14 +65,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
         {/* Top Navigation Row: Back to App */}
         <View style={styles.topNavRow}>
@@ -100,7 +79,7 @@ export default function LoginScreen() {
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
             <ArrowLeft size={18} color={theme.textPrimary} />
-            <Text style={[styles.backNavText, { color: theme.textPrimary }]}>Back to App</Text>
+            <Text style={[styles.backNavText, { color: theme.textPrimary }]}>Explore as Guest</Text>
           </TouchableOpacity>
         </View>
 
@@ -129,9 +108,9 @@ export default function LoginScreen() {
             { backgroundColor: theme.card, borderColor: theme.cardBorder },
           ]}
         >
-          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Welcome Back</Text>
-          <Text style={[styles.cardSubtitle, { color: theme.textMuted }]}>
-            Sign in to sync your meal logs, ₹ budget & fitness goals
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Sign In to MealFit</Text>
+          <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
+            Connect your Google account to unlock your personalized meal plan, kirana budget, and workout logs.
           </Text>
 
           {errorMsg && (
@@ -140,12 +119,12 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* 1. Google One-Tap Sign In */}
+          {/* Primary Google One-Tap Sign In Button */}
           <TouchableOpacity
             onPress={handleGoogleLogin}
             style={[
               styles.googleButton,
-              { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
+              { backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF', borderColor: theme.cardBorder },
             ]}
             activeOpacity={0.85}
             disabled={googleLoading}
@@ -153,131 +132,69 @@ export default function LoginScreen() {
             {googleLoading ? (
               <ActivityIndicator size="small" color={theme.primary} />
             ) : (
-              <>
+              <View style={styles.googleBtnRow}>
                 <View style={styles.googleIconBox}>
                   <Text style={styles.googleG}>G</Text>
                 </View>
                 <Text style={[styles.googleButtonText, { color: theme.textPrimary }]}>
                   Continue with Google
                 </Text>
-              </>
+                <ArrowRight size={18} color={theme.primary} />
+              </View>
             )}
           </TouchableOpacity>
 
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: theme.cardBorder }]} />
-            <Text style={[styles.dividerText, { color: theme.textMuted }]}>OR WITH EMAIL</Text>
-            <View style={[styles.dividerLine, { backgroundColor: theme.cardBorder }]} />
-          </View>
-
-          {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Email Address</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
-              ]}
-            >
-              <Mail size={16} color={theme.textMuted} />
-              <TextInput
-                style={[styles.input, { color: theme.textPrimary }]}
-                placeholder="name@gmail.com"
-                placeholderTextColor={theme.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+          {/* Value Propositions */}
+          <View style={[styles.featuresList, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={styles.featureItem}>
+              <CheckCircle2 size={16} color={theme.primary} />
+              <Text style={[styles.featureText, { color: theme.textSecondary }]}>
+                1-Tap Instant Secure Sign-In
+              </Text>
+            </View>
+            <View style={styles.featureItem}>
+              <CheckCircle2 size={16} color={theme.primary} />
+              <Text style={[styles.featureText, { color: theme.textSecondary }]}>
+                MongoDB Atlas Cloud Backup & Streak Sync
+              </Text>
+            </View>
+            <View style={styles.featureItem}>
+              <CheckCircle2 size={16} color={theme.primary} />
+              <Text style={[styles.featureText, { color: theme.textSecondary }]}>
+                Personalized Indian Kirana Meal Plans
+              </Text>
             </View>
           </View>
 
-          {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Password</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
-              ]}
-            >
-              <Lock size={16} color={theme.textMuted} />
-              <TextInput
-                style={[styles.input, { color: theme.textPrimary }]}
-                placeholder="Enter password"
-                placeholderTextColor={theme.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                {showPassword ? (
-                  <EyeOff size={16} color={theme.textMuted} />
-                ) : (
-                  <Eye size={16} color={theme.textMuted} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Sign In Primary Button */}
-          <TouchableOpacity
-            onPress={handleEmailLogin}
-            style={[styles.primaryButton, { backgroundColor: theme.primary }]}
-            activeOpacity={0.85}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={[styles.primaryButtonText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
-                  Sign In to MealFit
-                </Text>
-                <ArrowRight size={16} color={theme.isDark ? '#000000' : '#FFFFFF'} />
-              </>
-            )}
-          </TouchableOpacity>
-
-          {/* Register Switch */}
-          <View style={styles.switchRow}>
-            <Text style={[styles.switchText, { color: theme.textSecondary }]}>
-              Don't have an account?{' '}
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/auth/register' as any)}>
-              <Text style={[styles.switchLink, { color: theme.primary }]}>Create Account</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Trust & Security Badges */}
-        <View style={styles.trustRow}>
-          <View style={styles.trustItem}>
-            <ShieldCheck size={13} color={theme.primary} />
-            <Text style={[styles.trustText, { color: theme.textSecondary }]}>
-              256-Bit TLS 1.3 & Zero-Knowledge Encrypted
-            </Text>
-          </View>
-          <View style={styles.trustItem}>
-            <Lock size={13} color={theme.cyan} />
-            <Text style={[styles.trustText, { color: theme.textMuted }]}>
-              Zero Data Selling • ICMR-NIN Compliant
+          {/* Privacy & Cloud Tag */}
+          <View style={styles.secureFooterRow}>
+            <ShieldCheck size={14} color={theme.primary} />
+            <Text style={[styles.secureFooterText, { color: theme.textMuted }]}>
+              Your data is encrypted & saved to cloud
             </Text>
           </View>
         </View>
+
+        {/* Guest Access Link */}
+        <TouchableOpacity
+          onPress={handleBackToApp}
+          style={styles.guestLink}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.guestLinkText, { color: theme.textSecondary }]}>
+            Skip for now & browse as Guest ➔
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
+      {/* Google Quick Auth Modal for Expo Go */}
       <GoogleQuickAuthModal
         visible={showGoogleQuickModal}
         onClose={() => setShowGoogleQuickModal(false)}
-        onSuccess={() => {
-          setShowGoogleQuickModal(false);
-          router.replace('/(tabs)');
-        }}
-        initialEmail={email}
+        onSuccess={() => router.replace('/(tabs)')}
+        initialEmail="govindsharma2839@gmail.com"
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -287,40 +204,36 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 44 : 20,
-    paddingBottom: 48,
-    gap: 16,
-    alignItems: 'center',
+    paddingTop: Platform.OS === 'android' ? 44 : 54,
+    paddingBottom: 40,
   },
   topNavRow: {
-    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   backNavBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
   },
   backNavText: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '700',
   },
   brandContainer: {
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 24,
   },
   logoImage: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderColor: '#00E676',
+    borderRadius: 16,
+    marginBottom: 12,
   },
   brandTitleRow: {
     flexDirection: 'row',
@@ -328,164 +241,125 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brandTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
   indiaBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
   },
   indiaBadgeText: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   brandSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
     textAlign: 'center',
+    marginTop: 4,
+    fontWeight: '500',
   },
   card: {
-    width: '100%',
-    borderRadius: 22,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 20,
-    gap: 14,
+    padding: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   cardTitle: {
     fontSize: 20,
     fontWeight: '800',
+    marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 20,
   },
   errorBox: {
-    padding: 10,
+    padding: 12,
     borderRadius: 10,
     borderWidth: 1,
+    marginBottom: 16,
   },
   errorText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
   },
   googleButton: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  googleBtnRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1,
+    justifyContent: 'space-between',
   },
   googleIconBox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EA4335',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   googleG: {
-    color: '#4285F4',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '900',
   },
   googleButtonText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginVertical: 4,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 10,
+    fontSize: 15,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    flex: 1,
+    marginLeft: 12,
   },
-  inputGroup: {
-    gap: 6,
-  },
-  inputLabel: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  featuresList: {
     borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    padding: 14,
+    gap: 10,
+    marginBottom: 16,
   },
-  input: {
-    flex: 1,
-    fontSize: 13.5,
-    fontWeight: '600',
-    padding: 0,
-  },
-  eyeBtn: {
-    padding: 4,
-  },
-  primaryButton: {
+  featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    marginTop: 6,
   },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '800',
+  featureText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
-  switchRow: {
+  secureFooterRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  switchText: {
-    fontSize: 12,
-  },
-  switchLink: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  guestButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 6,
+  },
+  secureFooterText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  guestLink: {
+    alignItems: 'center',
+    marginTop: 20,
     paddingVertical: 8,
   },
-  guestButtonText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-  },
-  trustRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-  trustItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  trustText: {
-    fontSize: 11,
+  guestLinkText: {
+    fontSize: 13,
     fontWeight: '600',
   },
 });

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { promptGoogleSignIn } from '../services/googleAuth';
+import { promptGoogleSignIn, isNativeGooglePlayServicesAvailable } from '../services/googleAuth';
 import { GoogleQuickAuthModal } from './GoogleQuickAuthModal';
 import { useRouter } from 'expo-router';
 import { Lock, Sparkles, X, ArrowRight, ShieldCheck } from 'lucide-react-native';
@@ -39,9 +39,13 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
       await loginWithGoogle(googleUser);
       onClose();
     } catch (err: any) {
-      const msg = err?.message || String(err);
-      if (!msg.includes('cancelled') && !msg.includes('12501')) {
-        Alert.alert('Google Sign-In', msg);
+      if (!isNativeGooglePlayServicesAvailable()) {
+        setShowGoogleQuickModal(true);
+      } else {
+        const msg = err?.message || String(err);
+        if (!msg.includes('cancelled') && !msg.includes('12501')) {
+          Alert.alert('Google Sign-In', msg);
+        }
       }
     }
   };

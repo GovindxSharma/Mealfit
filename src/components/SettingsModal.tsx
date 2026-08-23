@@ -14,7 +14,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, DietaryType, EquipmentType } from '../context/AuthContext';
 import { NotificationService } from '../services/notificationService';
-import { promptGoogleSignIn } from '../services/googleAuth';
+import { promptGoogleSignIn, isNativeGooglePlayServicesAvailable } from '../services/googleAuth';
 import { GoogleQuickAuthModal } from './GoogleQuickAuthModal';
 import { useRouter } from 'expo-router';
 import {
@@ -89,9 +89,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const googleUser = await promptGoogleSignIn();
       await loginWithGoogle(googleUser);
     } catch (err: any) {
-      const msg = err?.message || String(err);
-      if (!msg.includes('cancelled') && !msg.includes('12501')) {
-        Alert.alert('Google Sign-In', msg);
+      if (!isNativeGooglePlayServicesAvailable()) {
+        setShowGoogleQuickModal(true);
+      } else {
+        const msg = err?.message || String(err);
+        if (!msg.includes('cancelled') && !msg.includes('12501')) {
+          Alert.alert('Google Sign-In', msg);
+        }
       }
     } finally {
       setGoogleLoading(false);
