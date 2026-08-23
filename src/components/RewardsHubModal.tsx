@@ -49,6 +49,8 @@ interface LeaderboardUser {
   isCurrentUser?: boolean;
 }
 
+import { UnlockedPerkViewerModal, PerkType } from './UnlockedPerkViewerModal';
+
 export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
   visible,
   onClose,
@@ -59,16 +61,45 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
 
   const [activeTab, setActiveTab] = useState<'rewards' | 'leaderboard'>('rewards');
   const [leaderboardScope, setLeaderboardScope] = useState<'all_india' | 'city'>('all_india');
+  const [selectedPerkViewer, setSelectedPerkViewer] = useState<PerkType | null>(null);
 
   const [unlockedPerks, setUnlockedPerks] = useState<{ [key: string]: boolean }>({
     perk_cheat: true,
-    perk_pdf: false,
-    perk_kirana: false,
+    perk_metabolic_dexa: true,
+    perk_glucose_guard: false,
+    perk_kirana_mandi: false,
+    perk_micronutrient_boost: false,
+    perk_clinical_pdf: false,
   });
 
   const fitCoins = 380;
   const currentStreakDays = 5;
   const userCity = user.city ? user.city.toUpperCase() : 'DELHI';
+
+  const handleUnlockOrOpen = (perkId: string, title: string, cost: number, perkTypeKey?: PerkType) => {
+    if (unlockedPerks[perkId]) {
+      if (perkTypeKey) {
+        setSelectedPerkViewer(perkTypeKey);
+      }
+      return;
+    }
+
+    if (fitCoins < cost) {
+      Alert.alert('More FitCoins Needed', `You need ${cost} FitCoins to unlock "${title}". Keep logging your meals, water, and workouts to earn more!`);
+      return;
+    }
+
+    setUnlockedPerks((prev) => ({ ...prev, [perkId]: true }));
+    Alert.alert('Perk Unlocked!', `You have unlocked "${title}". Tap "Open Feature" anytime to access it.`, [
+      {
+        text: 'Open Now',
+        onPress: () => {
+          if (perkTypeKey) setSelectedPerkViewer(perkTypeKey);
+        },
+      },
+      { text: 'Later', style: 'cancel' },
+    ]);
+  };
 
   const LEADERBOARD_USERS: LeaderboardUser[] = [
     {
@@ -347,14 +378,42 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
                 {/* Reward Shop & Unlockable Perks */}
                 <View style={styles.section}>
                   <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
-                    FitCoin Rewards Shop
+                    FitCoin Smart Rewards & Clinical Tools
                   </Text>
 
                   {[
                     {
+                      id: 'perk_metabolic_dexa',
+                      title: 'AI DEXA & Metabolic Adaptation Predictor',
+                      desc: 'Estimates weekly visceral vs adipose fat loss & BMR retention.',
+                      cost: 150,
+                      perkType: 'perk_metabolic_dexa' as PerkType,
+                    },
+                    {
+                      id: 'perk_glucose_guard',
+                      title: 'Glycemic Load & Insulin Spike Sequencer',
+                      desc: '3-step Indian food order that flattens post-meal glucose spikes by 42%.',
+                      cost: 180,
+                      perkType: 'perk_glucose_guard' as PerkType,
+                    },
+                    {
+                      id: 'perk_kirana_mandi',
+                      title: 'Wholesale Mandi Protein Arbitrage Guide',
+                      desc: 'High-protein staples (Sattu, Soya, Peanuts) sourced under ₹45/day.',
+                      cost: 220,
+                      perkType: 'perk_kirana_mandi' as PerkType,
+                    },
+                    {
+                      id: 'perk_micronutrient_boost',
+                      title: 'Anti-Nutrient & Micronutrient Bioavailability Hacks',
+                      desc: 'Triple iron absorption from Dal and amplify post-workout recovery.',
+                      cost: 120,
+                      perkType: 'perk_micronutrient_boost' as PerkType,
+                    },
+                    {
                       id: 'perk_cheat',
                       title: 'Smart Cheat Meal & Calorie Banking Simulator',
-                      desc: 'Bank calories and offset party meals with zero fat gain.',
+                      desc: 'Bank calories and offset party meals with zero fat spillover.',
                       cost: 100,
                       action: () => {
                         onClose();
@@ -362,18 +421,11 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
                       },
                     },
                     {
-                      id: 'perk_pdf',
-                      title: 'AI Body Transformation Projection Report (PDF)',
-                      desc: 'Generate exportable clinical progress graphs and timelines.',
-                      cost: 200,
-                      action: () => handleUnlockPerk('perk_pdf', 'AI Transformation Report', 200),
-                    },
-                    {
-                      id: 'perk_kirana',
-                      title: 'Ultra-Kirana High-Protein Secret Wholesale Guide',
-                      desc: 'Buy Sattu, Soya and Peanuts at wholesale Indian mandi prices.',
+                      id: 'perk_clinical_pdf',
+                      title: 'Clinical Transformation Report (Doctor / Dietitian PDF)',
+                      desc: 'Exportable medical/dietetic progress report with ICMR RDA metrics.',
                       cost: 250,
-                      action: () => handleUnlockPerk('perk_kirana', 'Wholesale Kirana Guide', 250),
+                      perkType: 'perk_clinical_pdf' as PerkType,
                     },
                   ].map((perk) => {
                     const isUnlocked = unlockedPerks[perk.id];
@@ -398,7 +450,13 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
                             </Text>
                           </View>
                           <TouchableOpacity
-                            onPress={perk.action}
+                            onPress={() => {
+                              if (perk.action) {
+                                perk.action();
+                              } else {
+                                handleUnlockOrOpen(perk.id, perk.title, perk.cost, perk.perkType);
+                              }
+                            }}
                             style={[
                               styles.perkActionBtn,
                               {
@@ -413,7 +471,7 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
                                 { color: isUnlocked ? theme.primary : '#FFFFFF' },
                               ]}
                             >
-                              {isUnlocked ? 'Open Perk' : `Unlock (${perk.cost} Coins)`}
+                              {isUnlocked ? 'Open Feature' : `Unlock (${perk.cost} pts)`}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -577,6 +635,15 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
           </ScrollView>
         </View>
       </View>
+
+      {/* Unlocked Smart Feature Viewer */}
+      {selectedPerkViewer && (
+        <UnlockedPerkViewerModal
+          visible={!!selectedPerkViewer}
+          onClose={() => setSelectedPerkViewer(null)}
+          perkType={selectedPerkViewer}
+        />
+      )}
     </Modal>
   );
 };
