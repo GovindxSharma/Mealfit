@@ -1,91 +1,79 @@
 import { Platform } from 'react-native';
-import { Asset } from 'expo-asset';
-import { setAudioModeAsync, AudioModule } from 'expo-audio';
+import { Audio } from 'expo-av';
 
 /**
- * MealFit Offline Local Audio Engine (SDK 54 expo-audio)
- * Plays simple, calm, local WAV notification sounds on Android & iOS
+ * MealFit Universal Audio Engine
+ * 100% Reliable Offline Sound FX for Expo Go, Standalone APK, and iOS
  */
 
-const SOUND_ASSETS = {
+const SOUND_MAP = {
   water: require('../../assets/sounds/water.wav'),
   meal: require('../../assets/sounds/meal.wav'),
   workout: require('../../assets/sounds/workout.wav'),
   reward: require('../../assets/sounds/reward.wav'),
 };
 
-const resolvedUriCache: Record<string, string> = {};
-let audioConfigured = false;
+let audioModeConfigured = false;
 
-async function initAudioMode() {
-  if (audioConfigured || Platform.OS === 'web') return;
+async function configureAudioMode() {
+  if (audioModeConfigured || Platform.OS === 'web') return;
   try {
-    await setAudioModeAsync({
-      playsInSilentMode: true,
-      shouldPlayInBackground: false,
+    await Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      allowsRecordingIOS: false,
+      staysActiveInBackground: false,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
     });
-    audioConfigured = true;
+    audioModeConfigured = true;
   } catch (_) {}
 }
 
-async function getLocalUri(key: keyof typeof SOUND_ASSETS): Promise<string | null> {
-  if (resolvedUriCache[key]) {
-    return resolvedUriCache[key];
-  }
-  try {
-    const asset = Asset.fromModule(SOUND_ASSETS[key]);
-    if (!asset.localUri) {
-      await asset.downloadAsync();
-    }
-    const uri = asset.localUri || asset.uri;
-    if (uri) {
-      resolvedUriCache[key] = uri;
-      return uri;
-    }
-  } catch (_) {}
-  return null;
-}
-
-async function playSound(key: keyof typeof SOUND_ASSETS) {
+async function playAssetSound(key: keyof typeof SOUND_MAP) {
   if (Platform.OS === 'web') return;
   try {
-    await initAudioMode();
-    const uri = await getLocalUri(key);
-    if (uri && AudioModule?.AudioPlayer) {
-      const player = new AudioModule.AudioPlayer({ uri }, 500, false);
-      player.play();
-    }
+    await configureAudioMode();
+    const asset = SOUND_MAP[key];
+    const { sound } = await Audio.Sound.createAsync(
+      asset,
+      { shouldPlay: true, volume: 1.0 }
+    );
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        sound.unloadAsync().catch(() => {});
+      }
+    });
   } catch (err) {
-    // Graceful silent fallback
+    // Graceful fallback
   }
 }
 
 export class SoundService {
   /**
-   * 1. Water: Simple, calm, soft water droplet pop
+   * 1. Water: Crisp, calm water droplet pop
    */
   static async playWaterDrop() {
-    await playSound('water');
+    await playAssetSound('water');
   }
 
   /**
-   * 2. Nutrition: Simple, calm warm marimba note
+   * 2. Nutrition: Warm marimba acoustic note
    */
   static async playMealLogged() {
-    await playSound('meal');
+    await playAssetSound('meal');
   }
 
   /**
-   * 3. Movement: Simple, calm soft focus chime
+   * 3. Movement: Soft calm focus chime
    */
   static async playWorkoutDing() {
-    await playSound('workout');
+    await playAssetSound('workout');
   }
 
   /**
-   * 4. Milestone: Simple, calm harmonic reward tone
+   * 4. Milestone: Harmonic reward chord
    */
   static async playRewardChime() {
-    await playSound('reward');
+    await playAssetSound('reward');
   }
 }
