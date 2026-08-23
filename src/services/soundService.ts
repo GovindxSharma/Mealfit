@@ -2,24 +2,24 @@ import { Platform } from 'react-native';
 import { setAudioModeAsync, AudioModule } from 'expo-audio';
 
 /**
- * MealFit Audio Synthesizer & Sound FX Engine (SDK 54 expo-audio)
- * Zero deprecation warnings, crisp native sound effects
+ * MealFit Calm & Aesthetic Sound Engine (SDK 54 expo-audio)
+ * Peaceful, distinct, non-jarring tones for Hydration, Meals, and Workouts
  */
 
-// 1. Water Drop Pop Sound
-const WATER_DROP_URI =
+// 1. Water Alert: Calm, refreshing natural water ripple
+const CALM_WATER_DROP_URI =
   'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3';
 
-// 2. Meal Logged Success Chime
-const MEAL_SUCCESS_URI =
-  'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3';
+// 2. Meal Alert: Soothing, gentle mindful harp chime
+const CALM_MEAL_CHIME_URI =
+  'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 
-// 3. Workout Rep Ding
-const WORKOUT_DING_URI =
-  'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3';
+// 3. Workout Alert: Gentle Zen harmonic bell
+const CALM_WORKOUT_BELL_URI =
+  'https://assets.mixkit.co/active_storage/sfx/2866/2866-preview.mp3';
 
-// 4. Reward Unlock Fanfare
-const REWARD_CHIME_URI =
+// 4. Reward Milestone: Soft euphoric victory harmony
+const CALM_REWARD_FANFARE_URI =
   'https://assets.mixkit.co/active_storage/sfx/1433/1433-preview.mp3';
 
 let audioInitialized = false;
@@ -50,30 +50,30 @@ async function playSoundUrl(url: string) {
 
 export class SoundService {
   /**
-   * Crystal water droplet pop
+   * 1. Hydration: Calm, refreshing spring water ripple
    */
   static async playWaterDrop() {
-    await playSoundUrl(WATER_DROP_URI);
+    await playSoundUrl(CALM_WATER_DROP_URI);
   }
 
   /**
-   * Warm culinary success chime for food logging
+   * 2. Nutrition: Gentle, mindful harp chime
    */
   static async playMealLogged() {
-    await playSoundUrl(MEAL_SUCCESS_URI);
+    await playSoundUrl(CALM_MEAL_CHIME_URI);
   }
 
   /**
-   * Crisp athletic bell for workout reps
+   * 3. Movement: Soothing Zen harmonic bell
    */
   static async playWorkoutDing() {
-    await playSoundUrl(WORKOUT_DING_URI);
+    await playSoundUrl(CALM_WORKOUT_BELL_URI);
   }
 
   /**
-   * Euphoric victory chime for reward unlocks & streaks
+   * 4. Victory: Soft harmonic reward fanfare
    */
   static async playRewardChime() {
-    await playSoundUrl(REWARD_CHIME_URI);
+    await playSoundUrl(CALM_REWARD_FANFARE_URI);
   }
 }
