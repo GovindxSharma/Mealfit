@@ -22,6 +22,19 @@ export interface LoggedMealEntry {
   time: string; // "08:30 AM"
 }
 
+export interface SavedCustomMeal {
+  id: string;
+  name: string; // User given custom name, e.g. "Govind's Power Lunch"
+  dishDescription: string; // e.g. "2 Rotis + 1 Bowl Moong Dal + 100g Dahi"
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  costInr: number;
+  slot: MealSlot;
+  createdAt: string;
+}
+
 export interface UserProfile {
   id?: string;
   fullName: string;
@@ -89,6 +102,12 @@ interface AuthContextType {
     fat: number;
     cost: number;
   };
+
+  // Saved / Repeatable Custom Meals Engine
+  savedMeals: SavedCustomMeal[];
+  saveCustomMeal: (meal: Omit<SavedCustomMeal, 'id' | 'createdAt'>) => void;
+  deleteSavedMeal: (id: string) => void;
+  repeatSavedMeal: (savedMealId: string, targetDate?: string) => void;
 
   login: (email: string, fullName?: string) => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>;
@@ -270,6 +289,10 @@ const AuthContext = createContext<AuthContextType>({
   loggedMealsHistory: defaultMealsHistory,
   selectedHistoryDate: getTodayDateStr(),
   setSelectedHistoryDate: () => {},
+  savedMeals: [],
+  saveCustomMeal: () => {},
+  deleteSavedMeal: () => {},
+  repeatSavedMeal: () => {},
   addCustomMeal: () => {},
   deleteLoggedMeal: () => {},
   getMealsForDate: () => [],
@@ -302,6 +325,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // History & Custom Meals State
   const [loggedMealsHistory, setLoggedMealsHistory] = useState<LoggedMealEntry[]>(defaultMealsHistory);
   const [selectedHistoryDate, setSelectedHistoryDate] = useState<string>(getTodayDateStr());
+  const [savedMeals, setSavedMeals] = useState<SavedCustomMeal[]>([
+    {
+      id: 'saved_1',
+      name: 'Power Soya & Dal Lunch',
+      dishDescription: '50g Soya Bhurji + 1 Bowl Moong Dal + 2 Phulkas',
+      calories: 480,
+      proteinG: 38.5,
+      carbsG: 52,
+      fatG: 12,
+      costInr: 28,
+      slot: 'lunch',
+      createdAt: getTodayDateStr(),
+    },
+    {
+      id: 'saved_2',
+      name: 'Morning Sattu Kickstart',
+      dishDescription: '1 Big Glass Chana Sattu Buttermilk + Lemon + Jeera',
+      calories: 220,
+      proteinG: 22.5,
+      carbsG: 26,
+      fatG: 3.5,
+      costInr: 12,
+      slot: 'breakfast',
+      createdAt: getTodayDateStr(),
+    },
+  ]);
 
   // Interactive Live Tracker State for Today
   const [loggedMealIds, setLoggedMealIds] = useState<string[]>(['breakfast', 'lunch']);
@@ -417,6 +466,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setLoggedMealsHistory((prev) => [newMeal, ...prev]);
+  };
+
+  const saveCustomMeal = (meal: Omit<SavedCustomMeal, 'id' | 'createdAt'>) => {
+    const newSaved: SavedCustomMeal = {
+      ...meal,
+      id: `saved_${Date.now()}`,
+      createdAt: getTodayDateStr(),
+    };
+    setSavedMeals((prev) => {
+      const updated = [newSaved, ...prev];
+      SafeStorage.setItem('mealfit_saved_custom_meals', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const deleteSavedMeal = (id: string) => {
+    setSavedMeals((prev) => {
+      const updated = prev.filter((m) => m.id !== id);
+      SafeStorage.setItem('mealfit_saved_custom_meals', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const repeatSavedMeal = (savedMealId: string, targetDate?: string) => {
+    const found = savedMeals.find((m) => m.id === savedMealId);
+    if (!found) return;
+    addCustomMeal({
+      name: found.name,
+      calories: found.calories,
+      proteinG: found.proteinG,
+      carbsG: found.carbsG,
+      fatG: found.fatG,
+      slot: found.slot,
+      quantity: found.dishDescription || '1 Portion',
+      costInr: found.costInr,
+      date: targetDate || selectedHistoryDate,
+    });
   };
 
   const deleteLoggedMeal = (id: string) => {
@@ -747,6 +833,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loggedMealsHistory,
         selectedHistoryDate,
         setSelectedHistoryDate,
+        savedMeals,
+        saveCustomMeal,
+        deleteSavedMeal,
+        repeatSavedMeal,
         addCustomMeal,
         deleteLoggedMeal,
         getMealsForDate,

@@ -26,6 +26,7 @@ import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import { MasterDietChartModal } from '../../src/components/MasterDietChartModal';
 import { SmartCheatDayModal } from '../../src/components/SmartCheatDayModal';
 import { RewardsHubModal } from '../../src/components/RewardsHubModal';
+import { SavedMealsComposerModal } from '../../src/components/SavedMealsComposerModal';
 import { NotificationService } from '../../src/services/notificationService';
 import { useRouter } from 'expo-router';
 import {
@@ -49,6 +50,9 @@ import {
   Palette,
   ShieldCheck,
   Lock,
+  Bookmark,
+  RotateCcw,
+  Scale,
 } from 'lucide-react-native';
 
 export default function HomeScreen() {
@@ -79,6 +83,7 @@ export default function HomeScreen() {
   const [showTrainerModal, setShowTrainerModal] = useState<boolean>(false);
   const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
   const [showCustomMealModal, setShowCustomMealModal] = useState<boolean>(false);
+  const [showSavedMealsModal, setShowSavedMealsModal] = useState<boolean>(false);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
   const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
   const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
@@ -481,6 +486,46 @@ export default function HomeScreen() {
               <ChevronRight size={14} color={theme.textPrimary} />
             </View>
           </TouchableOpacity>
+
+          {/* My Saved Meals & Repeats Card */}
+          <TouchableOpacity
+            onPress={() => setShowSavedMealsModal(true)}
+            style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: theme.primaryLight }]}>
+              <Bookmark size={22} color={theme.primary} />
+            </View>
+            <View style={styles.actionTextBox}>
+              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>Saved Meals & 1-Tap Repeat</Text>
+              <Text style={[styles.actionSub, { color: theme.textSecondary }]}>
+                Compose dishes, save favorites & re-log instantly
+              </Text>
+            </View>
+            <View style={styles.actionArrowCircle}>
+              <ChevronRight size={14} color={theme.textPrimary} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Change Goal & Timeline Card */}
+          <TouchableOpacity
+            onPress={() => setShowCheatModal(true)}
+            style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: theme.indigoLight }]}>
+              <Scale size={22} color={theme.indigo} />
+            </View>
+            <View style={styles.actionTextBox}>
+              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>Change Goal & Targets</Text>
+              <Text style={[styles.actionSub, { color: theme.textSecondary }]}>
+                {user.targetWeightKg} kg • {user.goalType === 'muscle_gain' ? 'Muscle Gain' : 'Fat Loss'} • {user.estimatedWeeksToGoal || 8} Wks
+              </Text>
+            </View>
+            <View style={styles.actionArrowCircle}>
+              <ChevronRight size={14} color={theme.textPrimary} />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Master Diet Chart & Nutrition Intelligence Banner */}
@@ -748,6 +793,10 @@ export default function HomeScreen() {
         visible={showRewardsModal}
         onClose={() => setShowRewardsModal(false)}
         onOpenCheatPlanner={() => setShowCheatModal(true)}
+      />
+      <SavedMealsComposerModal
+        visible={showSavedMealsModal}
+        onClose={() => setShowSavedMealsModal(false)}
       />
     </View>
   );

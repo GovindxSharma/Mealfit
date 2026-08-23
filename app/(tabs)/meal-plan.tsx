@@ -14,6 +14,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, MealSlot, LoggedMealEntry } from '../../src/context/AuthContext';
 import { CustomMealModal } from '../../src/components/CustomMealModal';
 import { MasterDietChartModal } from '../../src/components/MasterDietChartModal';
+import { SavedMealsComposerModal } from '../../src/components/SavedMealsComposerModal';
 import {
   Utensils,
   Plus,
@@ -29,6 +30,8 @@ import {
   ShoppingBag,
   ChefHat,
   BookmarkCheck,
+  Bookmark,
+  RotateCcw,
 } from 'lucide-react-native';
 
 export default function MealPlanScreen() {
@@ -43,11 +46,13 @@ export default function MealPlanScreen() {
     deleteLoggedMeal,
     loggedMealIds,
     toggleMealLogged,
+    savedMeals,
   } = useAuth();
 
   const [activeSubTab, setActiveSubTab] = useState<'diary' | 'schedule' | 'kirana' | 'jugaad'>('diary');
   const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
   const [showDietChartModal, setShowDietChartModal] = useState<boolean>(false);
+  const [showSavedMealsModal, setShowSavedMealsModal] = useState<boolean>(false);
   const [modalSlot, setModalSlot] = useState<MealSlot>('lunch');
   const [budgetPerDay, setBudgetPerDay] = useState<number>(Math.round(user.weeklyBudgetInr / 7) || 90);
   const insets = useSafeAreaInsets();
@@ -240,34 +245,60 @@ Generated via MealFit India App`;
         </TouchableOpacity>
       </View>
 
-      {/* Glowing Master Diet Blueprint Launcher */}
-      <TouchableOpacity
-        onPress={() => setShowDietChartModal(true)}
-        style={[
-          styles.masterDietLauncher,
-          {
-            backgroundColor: theme.primaryLight,
-            borderColor: theme.primary,
-          },
-        ]}
-        activeOpacity={0.85}
-      >
-        <View style={styles.masterDietLauncherLeft}>
-          <Sparkles size={16} color={theme.primary} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.masterDietLauncherTitle, { color: theme.primary }]}>
-              Master Indian Diet Blueprint & Swaps
-            </Text>
-            <Text style={[styles.masterDietLauncherDesc, { color: theme.textSecondary }]}>
-              Pre-Workout ➔ Bedtime • Science Rationale • 1-Tap Swaps
-            </Text>
+      {/* Glowing Dual Launchers: Master Diet & Saved Meals Repeats */}
+      <View style={styles.dualLauncherRow}>
+        <TouchableOpacity
+          onPress={() => setShowDietChartModal(true)}
+          style={[
+            styles.masterDietLauncher,
+            {
+              backgroundColor: theme.primaryLight,
+              borderColor: theme.primary,
+              flex: 1,
+            },
+          ]}
+          activeOpacity={0.85}
+        >
+          <View style={styles.masterDietLauncherLeft}>
+            <Sparkles size={16} color={theme.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.masterDietLauncherTitle, { color: theme.primary }]}>
+                Master Diet Chart
+              </Text>
+              <Text style={[styles.masterDietLauncherDesc, { color: theme.textSecondary }]}>
+                Pre-Workout ➔ Bedtime
+              </Text>
+            </View>
           </View>
-        </View>
-        <View style={[styles.masterDietLauncherBtn, { backgroundColor: theme.primary }]}>
-          <Text style={styles.masterDietLauncherBtnText}>Open</Text>
-          <ChevronRight size={12} color="#FFFFFF" />
-        </View>
-      </TouchableOpacity>
+          <ChevronRight size={14} color={theme.primary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setShowSavedMealsModal(true)}
+          style={[
+            styles.masterDietLauncher,
+            {
+              backgroundColor: theme.secondaryLight,
+              borderColor: theme.primary,
+              flex: 1,
+            },
+          ]}
+          activeOpacity={0.85}
+        >
+          <View style={styles.masterDietLauncherLeft}>
+            <Bookmark size={16} color={theme.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.masterDietLauncherTitle, { color: theme.primary }]}>
+                Saved Meals ({savedMeals.length})
+              </Text>
+              <Text style={[styles.masterDietLauncherDesc, { color: theme.textSecondary }]}>
+                1-Tap Compose & Repeat
+              </Text>
+            </View>
+          </View>
+          <ChevronRight size={14} color={theme.primary} />
+        </TouchableOpacity>
+      </View>
 
       {/* Main Content Areas */}
       {activeSubTab === 'diary' ? (
@@ -695,6 +726,13 @@ Generated via MealFit India App`;
         visible={showDietChartModal}
         onClose={() => setShowDietChartModal(false)}
       />
+
+      {/* Saved Meals Composer & Repeat Modal */}
+      <SavedMealsComposerModal
+        visible={showSavedMealsModal}
+        onClose={() => setShowSavedMealsModal(false)}
+        initialSlot={modalSlot}
+      />
     </View>
   );
 }
@@ -757,17 +795,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  dualLauncherRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 10,
+  },
   masterDietLauncher: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: 16,
-    marginTop: 10,
     borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    gap: 10,
+    gap: 8,
   },
   masterDietLauncherLeft: {
     flexDirection: 'row',

@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
+import { SmartCheatDayModal } from '../../src/components/SmartCheatDayModal';
+import { RewardsHubModal } from '../../src/components/RewardsHubModal';
 import {
   TrendingUp,
   Award,
@@ -22,12 +24,19 @@ import {
   Zap,
   Check,
   Lock,
+  Calendar,
+  Trophy,
+  Scale,
+  ChevronRight,
+  Utensils,
 } from 'lucide-react-native';
 
 export default function AnalyticsScreen() {
   const { theme } = useTheme();
   const { user, isLoggedIn } = useAuth();
   const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
+  const [showCheatModal, setShowCheatModal] = useState<boolean>(false);
+  const [showRewardsModal, setShowRewardsModal] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
   const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
 
@@ -74,7 +83,90 @@ export default function AnalyticsScreen() {
             </View>
           </TouchableOpacity>
         )}
-        {/* 1. Habit Streak & Adherence */}
+
+        {/* 1. Smart Cheat Day Countdown & Calorie Banking Card */}
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={styles.cardHeader}>
+            <View style={styles.headerTitleRow}>
+              <Flame size={18} color={theme.amber} />
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Smart Cheat Day Countdown</Text>
+            </View>
+            <View style={[styles.streakBadgeBox, { backgroundColor: theme.amberLight }]}>
+              <Calendar size={12} color={theme.amber} />
+              <Text style={[styles.streakBadge, { color: theme.amber }]}>In 3 Days</Text>
+            </View>
+          </View>
+
+          <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
+            Next Scheduled Cheat Meal: <Text style={{ fontWeight: '800', color: theme.textPrimary }}>Amritsari Chole Bhature (780 kcal)</Text>
+          </Text>
+
+          {/* Calorie Banking Meter */}
+          <View style={[styles.bankingMeterCard, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={styles.bankingMeterTop}>
+              <Text style={[styles.bankingLabel, { color: theme.textSecondary }]}>Calorie Banking Progress</Text>
+              <Text style={[styles.bankingValue, { color: theme.primary }]}>300 / 450 kcal Banked</Text>
+            </View>
+            <View style={styles.bankingBarBg}>
+              <View style={[styles.bankingBarFill, { width: '67%', backgroundColor: theme.primary }]} />
+            </View>
+            <Text style={[styles.bankingSub, { color: theme.textMuted }]}>
+              2 Days of clean Kirana eating left ➔ 0g Fat Spillover Target!
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setShowCheatModal(true)}
+            style={[styles.recalibrateBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.recalibrateBtnText, { color: theme.primary }]}>Adjust Cheat Meal or Days Ahead</Text>
+            <ChevronRight size={14} color={theme.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 2. FitCoins Reward & Streak Milestone Tracker */}
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={styles.cardHeader}>
+            <View style={styles.headerTitleRow}>
+              <Trophy size={18} color={theme.secondary} />
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Reward Milestones & FitCoins</Text>
+            </View>
+            <View style={[styles.streakBadgeBox, { backgroundColor: theme.secondaryLight }]}>
+              <Text style={[styles.streakBadge, { color: theme.primary }]}>380 FitCoins</Text>
+            </View>
+          </View>
+
+          <View style={[styles.rewardMilestoneBox, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={styles.milestoneRow}>
+              <View style={[styles.milestoneIcon, { backgroundColor: theme.primaryLight }]}>
+                <Sparkles size={16} color={theme.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.milestoneTitle, { color: theme.textPrimary }]}>
+                  Next Reward: AI Transformation PDF
+                </Text>
+                <Text style={[styles.milestoneSub, { color: theme.textSecondary }]}>
+                  Only 20 FitCoins away • Earn by logging today's dinner
+                </Text>
+              </View>
+            </View>
+            <View style={styles.bankingBarBg}>
+              <View style={[styles.bankingBarFill, { width: '80%', backgroundColor: theme.secondary }]} />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setShowRewardsModal(true)}
+            style={[styles.recalibrateBtn, { backgroundColor: theme.secondaryLight, borderColor: theme.primary }]}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.recalibrateBtnText, { color: theme.primary }]}>Open Rewards Hub & Unlock Perks</Text>
+            <ChevronRight size={14} color={theme.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 3. Habit Streak & Adherence */}
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={styles.headerTitleRow}>
@@ -114,7 +206,7 @@ export default function AnalyticsScreen() {
           </View>
         </View>
 
-        {/* 2. Kirana Grocery Wallet Savings Tracker */}
+        {/* 4. Kirana Grocery Wallet Savings Tracker */}
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={styles.headerTitleRow}>
@@ -142,65 +234,23 @@ export default function AnalyticsScreen() {
           </View>
         </View>
 
-        {/* 3. Weight Moving Average Trend */}
+        {/* 5. Weight Moving Average Trend & Goal Recalibrator */}
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={styles.headerTitleRow}>
-              <TrendingUp size={18} color={theme.cyan} />
-              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>6-Week Weight Trend</Text>
+              <Scale size={18} color={theme.cyan} />
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Weight Target & Speed</Text>
             </View>
-            <Text style={[styles.weightChangeText, { color: theme.primary }]}>-3.8 kg</Text>
+            <TouchableOpacity
+              onPress={() => setShowCheatModal(true)}
+              style={[styles.smallRecalibratePill, { backgroundColor: theme.primaryLight }]}
+            >
+              <Text style={[styles.smallRecalibrateText, { color: theme.primary }]}>Change Goal</Text>
+            </TouchableOpacity>
           </View>
 
           <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
-            7-day moving average eliminates sodium & water weight fluctuations.
-          </Text>
-
-          {/* Simple Clean Bar Chart Progression */}
-          <View style={styles.chartBarsRow}>
-            {[
-              { week: 'W1', weight: 72.0, height: 70 },
-              { week: 'W2', weight: 71.4, height: 65 },
-              { week: 'W3', weight: 70.8, height: 58 },
-              { week: 'W4', weight: 70.1, height: 50 },
-              { week: 'W5', weight: 69.4, height: 42 },
-              { week: 'W6', weight: 68.2, height: 32 },
-            ].map((item, idx) => (
-              <View key={idx} style={styles.barCol}>
-                <Text style={[styles.barWeightText, { color: theme.textSecondary }]}>{item.weight}</Text>
-                <View style={styles.barTrack}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      {
-                        height: `${item.height}%`,
-                        backgroundColor: idx === 5 ? theme.primary : theme.primaryLight,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.barLabel, { color: idx === 5 ? theme.primary : theme.textMuted }]}>
-                  {item.week}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* 4. AI Body Transformation Projection Engine */}
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-          <View style={styles.cardHeader}>
-            <View style={styles.headerTitleRow}>
-              <Sparkles size={18} color={theme.amber} />
-              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Target Projection Timeline</Text>
-            </View>
-            <View style={[styles.projectionPill, { backgroundColor: theme.amberLight }]}>
-              <Text style={[styles.projectionPillText, { color: theme.amber }]}>ICMR Safe Pace</Text>
-            </View>
-          </View>
-
-          <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
-            Based on your {user.goalType === 'muscle_gain' ? 'caloric surplus' : 'daily 300-500 kcal deficit'} & Indian protein split.
+            Current: {user.weightKg || 70} kg ➔ Target: {user.targetWeightKg || 65} kg ({user.goalType === 'muscle_gain' ? 'Muscle Hypertrophy' : 'Fat Loss'})
           </Text>
 
           <View style={styles.projectionGrid}>
@@ -220,12 +270,12 @@ export default function AnalyticsScreen() {
           <View style={[styles.projectionEstimateBanner, { backgroundColor: theme.isDark ? '#1E293B' : '#F1F5F9' }]}>
             <Zap size={14} color={theme.primary} />
             <Text style={[styles.estimateBannerText, { color: theme.textPrimary }]}>
-              Estimated completion in <Text style={{ color: theme.primary, fontWeight: '900' }}>{Math.max(4, Math.round(Math.abs((user.weightKg || 70) - (user.targetWeightKg || 65)) / 0.45))} weeks</Text> with consistent Kirana meal logging!
+              Estimated completion in <Text style={{ color: theme.primary, fontWeight: '900' }}>{user.estimatedWeeksToGoal || 8} weeks</Text> with consistent Kirana meal logging!
             </Text>
           </View>
         </View>
 
-        {/* 4. Export Monthly PDF Report */}
+        {/* 6. Export Monthly PDF Report */}
         <TouchableOpacity
           onPress={handleExportPdf}
           style={[styles.exportBtn, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
@@ -236,12 +286,23 @@ export default function AnalyticsScreen() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Auth Gate Modal */}
+      {/* Modals */}
       <AuthRequiredModal
         visible={showAuthGate}
         onClose={() => setShowAuthGate(false)}
         title="Sync Cloud Analytics"
         subtitle="Sign in to your MealFit account to unlock 30-day weight progression curves and PDF export reports."
+      />
+
+      <SmartCheatDayModal
+        visible={showCheatModal}
+        onClose={() => setShowCheatModal(false)}
+      />
+
+      <RewardsHubModal
+        visible={showRewardsModal}
+        onClose={() => setShowRewardsModal(false)}
+        onOpenCheatPlanner={() => setShowCheatModal(true)}
       />
     </View>
   );
@@ -484,6 +545,85 @@ const styles = StyleSheet.create({
   },
   exportBtnText: {
     fontSize: 13,
+    fontWeight: '800',
+  },
+  bankingMeterCard: {
+    padding: 12,
+    borderRadius: 14,
+    gap: 6,
+  },
+  bankingMeterTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  bankingLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  bankingValue: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  bankingBarBg: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden',
+  },
+  bankingBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  bankingSub: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  recalibrateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  recalibrateBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+  },
+  rewardMilestoneBox: {
+    padding: 12,
+    borderRadius: 14,
+    gap: 10,
+  },
+  milestoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  milestoneIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  milestoneTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  milestoneSub: {
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+  smallRecalibratePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  smallRecalibrateText: {
+    fontSize: 10.5,
     fontWeight: '800',
   },
 });

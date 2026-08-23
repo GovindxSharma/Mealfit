@@ -17,18 +17,31 @@ import {
   Dumbbell,
   Activity,
   Heart,
+  Wind,
+  ShieldCheck,
+  CheckCircle2,
+  Info,
+  Flame,
 } from 'lucide-react-native';
 
 interface WorkoutAnimationCardProps {
   exerciseName?: string;
   tempo?: string; // e.g. "3-0-1" (3s Down, 0s Pause, 1s Up)
   category?: 'strength' | 'running' | 'warmup' | 'cooldown';
+  targetMuscle?: string;
+  formCues?: string[];
 }
 
 export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
   exerciseName = 'Bodyweight Squats',
   tempo = '3-0-1',
   category = 'strength',
+  targetMuscle = 'Quadriceps & Glutes',
+  formCues = [
+    'Keep chest upright and core braced',
+    'Lower down for 3 seconds under full control',
+    'Drive through mid-foot and exhale at the top',
+  ],
 }) => {
   const { theme } = useTheme();
 
@@ -36,61 +49,75 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
   const [tempoPhase, setTempoPhase] = useState<'eccentric' | 'pause' | 'concentric'>('eccentric');
   const [repCount, setRepCount] = useState<number>(0);
   const [tempoSeconds, setTempoSeconds] = useState<number>(3);
+  const [breathingCue, setBreathingCue] = useState<string>('Inhale on lowering phase');
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+  // Animation values
+  const contractionAnim = useRef(new Animated.Value(0)).current;
+  const pulseRingAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     let interval: any;
 
     if (isActive) {
-      // Animated visual pulse
+      // Continuous pulse for kinetic athlete feedback
       Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.25,
-            duration: category === 'running' ? 350 : 1500,
+          Animated.timing(pulseRingAnim, {
+            toValue: 1.18,
+            duration: category === 'running' ? 380 : 1500,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
-          Animated.timing(pulseAnim, {
+          Animated.timing(pulseRingAnim, {
             toValue: 1,
-            duration: category === 'running' ? 350 : 1500,
+            duration: category === 'running' ? 380 : 1500,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
         ])
       ).start();
 
-      // Cadence / Rep counter logic
-      let phaseStep = 3;
+      let currentStep = 3;
       interval = setInterval(() => {
         if (category === 'running') {
-          setRepCount((prev) => prev + 2); // Running strides
+          setRepCount((prev) => prev + 2);
         } else {
-          // 3s Lowering ➔ 1s Explode
-          phaseStep -= 1;
-          if (phaseStep > 0) {
+          currentStep -= 1;
+          if (currentStep > 0) {
             setTempoPhase('eccentric');
-            setTempoSeconds(phaseStep);
-          } else if (phaseStep === 0) {
+            setTempoSeconds(currentStep);
+            setBreathingCue('Inhale deeply • Control the descent');
+            Animated.timing(contractionAnim, {
+              toValue: (4 - currentStep) / 3,
+              duration: 900,
+              useNativeDriver: false,
+            }).start();
+          } else if (currentStep === 0) {
             setTempoPhase('concentric');
             setTempoSeconds(1);
+            setBreathingCue('Exhale & Drive with power!');
+            Animated.timing(contractionAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: false,
+            }).start();
           } else {
             setRepCount((prev) => prev + 1);
-            phaseStep = 3;
+            currentStep = 3;
             setTempoPhase('eccentric');
             setTempoSeconds(3);
+            setBreathingCue('Inhale deeply • Control the descent');
           }
         }
       }, 1000);
     } else {
-      pulseAnim.setValue(1);
+      pulseRingAnim.setValue(1);
+      contractionAnim.setValue(0);
     }
 
     return () => {
       clearInterval(interval);
-      pulseAnim.stopAnimation();
+      pulseRingAnim.stopAnimation();
     };
   }, [isActive, category]);
 
@@ -103,7 +130,9 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
     setRepCount(0);
     setTempoSeconds(3);
     setTempoPhase('eccentric');
-    pulseAnim.setValue(1);
+    setBreathingCue('Inhale on lowering phase');
+    pulseRingAnim.setValue(1);
+    contractionAnim.setValue(0);
   };
 
   return (
@@ -113,80 +142,111 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
         { backgroundColor: theme.card, borderColor: theme.cardBorder },
       ]}
     >
-      {/* Header */}
+      {/* Header Info */}
       <View style={styles.headerRow}>
-        <View style={styles.titleInfo}>
-          <View style={styles.categoryBadge}>
-            <Activity size={12} color={theme.primary} />
-            <Text style={[styles.categoryText, { color: theme.primary }]}>
-              {category === 'running' ? 'RUNNING CADENCE' : 'VISUAL REP TEMPO GUIDE'}
-            </Text>
+        <View style={{ flex: 1, gap: 2 }}>
+          <View style={styles.badgeRow}>
+            <View style={[styles.categoryBadge, { backgroundColor: theme.primaryLight }]}>
+              <Activity size={12} color={theme.primary} />
+              <Text style={[styles.categoryText, { color: theme.primary }]}>
+                {category === 'running' ? 'CADENCE PULSE' : 'VISUAL REP TEMPO GUIDE'}
+              </Text>
+            </View>
+            <View style={[styles.targetBadge, { backgroundColor: theme.backgroundSecondary }]}>
+              <Text style={[styles.targetText, { color: theme.textSecondary }]}>
+                Target: {targetMuscle}
+              </Text>
+            </View>
           </View>
           <Text style={[styles.exerciseTitle, { color: theme.textPrimary }]}>
             {exerciseName}
           </Text>
         </View>
 
-        <View style={[styles.repCountBox, { backgroundColor: theme.primaryLight }]}>
-          <Text style={[styles.repNumber, { color: theme.primary }]}>{repCount}</Text>
-          <Text style={[styles.repLabel, { color: theme.primary }]}>
-            {category === 'running' ? 'Strides' : 'Reps'}
+        {/* Counter Badge */}
+        <View style={[styles.repCounterCard, { backgroundColor: theme.primaryLight }]}>
+          <Text style={[styles.repBigNumber, { color: theme.primary }]}>{repCount}</Text>
+          <Text style={[styles.repSmallLabel, { color: theme.primary }]}>
+            {category === 'running' ? 'Strides' : 'Reps Completed'}
           </Text>
         </View>
       </View>
 
-      {/* Interactive Visual Animation Area */}
+      {/* Kinetic Visual Coach Stage */}
       <View
         style={[
-          styles.animationStage,
+          styles.kineticStage,
           { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
         ]}
       >
-        {/* Pulsing Outer Rings */}
+        {/* Pulsing Concentric Aura */}
         <Animated.View
           style={[
-            styles.pulseRing,
+            styles.auraRing,
             {
-              borderColor: theme.primary,
-              transform: [{ scale: pulseAnim }],
-              opacity: isActive ? 0.35 : 0.15,
+              borderColor: tempoPhase === 'concentric' ? theme.secondary : theme.primary,
+              transform: [{ scale: pulseRingAnim }],
+              opacity: isActive ? 0.4 : 0.15,
             },
           ]}
         />
 
-        {/* Central Kinetic Core */}
+        {/* Dynamic Center Kinetic Core */}
         <View
           style={[
-            styles.coreCircle,
+            styles.kineticCore,
             {
-              backgroundColor: isActive ? theme.primary : theme.cardBorder,
+              backgroundColor: isActive
+                ? tempoPhase === 'concentric'
+                  ? theme.secondary
+                  : theme.primary
+                : theme.cardBorder,
               shadowColor: theme.primary,
             },
           ]}
         >
           {category === 'running' ? (
-            <Heart size={28} color="#FFFFFF" />
+            <Heart size={32} color="#FFFFFF" />
           ) : (
-            <Dumbbell size={28} color="#FFFFFF" />
+            <Dumbbell size={32} color="#FFFFFF" />
           )}
         </View>
 
-        {/* Dynamic Tempo Text */}
-        <View style={styles.tempoInfoOverlay}>
-          {category === 'running' ? (
-            <Text style={[styles.tempoPhaseText, { color: theme.textPrimary }]}>
-              {isActive ? '170 SPM Cadence Pulse' : 'Tap Start for Paced Rhythm'}
+        {/* Real-Time Phase Instruction Overlay */}
+        <View style={styles.tempoInstructionBox}>
+          <Text style={[styles.tempoPhaseName, { color: theme.textPrimary }]}>
+            {isActive
+              ? category === 'running'
+                ? '170 SPM Optimal Cadence Pulse'
+                : tempoPhase === 'eccentric'
+                ? `LOWER CONTROLLED: ${tempoSeconds}s`
+                : 'EXPLODE UP & CONTRACT'
+              : 'Interactive 3-0-1 Tempo Rhythm Coach'}
+          </Text>
+
+          <View style={styles.breathingRow}>
+            <Wind size={13} color={theme.textSecondary} />
+            <Text style={[styles.breathingText, { color: theme.textSecondary }]}>
+              {isActive ? breathingCue : 'Tap Start to begin guided rep cadence'}
             </Text>
-          ) : (
-            <Text style={[styles.tempoPhaseText, { color: theme.textPrimary }]}>
-              {isActive
-                ? tempoPhase === 'eccentric'
-                  ? `Lower Slowly: ${tempoSeconds}s`
-                  : 'Explode Up!'
-                : 'Controlled 3s Tempo • Hypertrophy Focus'}
-            </Text>
-          )}
+          </View>
         </View>
+      </View>
+
+      {/* Form Cue Breakdown */}
+      <View style={[styles.formCueBox, { backgroundColor: theme.backgroundSecondary }]}>
+        <View style={styles.formCueHeader}>
+          <Info size={13} color={theme.primary} />
+          <Text style={[styles.formCueTitle, { color: theme.textPrimary }]}>
+            Biomechanical Form Instructions:
+          </Text>
+        </View>
+        {formCues.map((cue, i) => (
+          <View key={i} style={styles.cueItemRow}>
+            <CheckCircle2 size={12} color={theme.primary} />
+            <Text style={[styles.cueText, { color: theme.textSecondary }]}>{cue}</Text>
+          </View>
+        ))}
       </View>
 
       {/* Control Buttons */}
@@ -194,35 +254,32 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
         <TouchableOpacity
           onPress={handleToggle}
           style={[
-            styles.playBtn,
+            styles.mainPlayBtn,
             { backgroundColor: isActive ? theme.amber : theme.primary },
           ]}
           activeOpacity={0.85}
         >
           {isActive ? (
-            <>
-              <Pause size={16} color="#FFFFFF" />
-              <Text style={styles.btnText}>Pause Tempo</Text>
-            </>
+            <Pause size={17} color="#FFFFFF" />
           ) : (
-            <>
-              <Play size={16} color="#FFFFFF" />
-              <Text style={styles.btnText}>Start Rep Tempo Guide</Text>
-            </>
+            <Play size={17} color="#FFFFFF" />
           )}
+          <Text style={styles.mainPlayBtnText}>
+            {isActive ? 'Pause Tempo' : 'Start Guided Reps'}
+          </Text>
         </TouchableOpacity>
 
-        {repCount > 0 && (
-          <TouchableOpacity
-            onPress={handleReset}
-            style={[
-              styles.resetBtn,
-              { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
-            ]}
-          >
-            <RotateCcw size={16} color={theme.textMuted} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          onPress={handleReset}
+          style={[
+            styles.resetBtn,
+            { backgroundColor: theme.card, borderColor: theme.cardBorder },
+          ]}
+          activeOpacity={0.8}
+        >
+          <RotateCcw size={16} color={theme.textSecondary} />
+          <Text style={[styles.resetBtnText, { color: theme.textSecondary }]}>Reset</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -234,109 +291,162 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     gap: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
   },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  titleInfo: {
-    flex: 1,
-    gap: 2,
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
   },
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   categoryText: {
     fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  exerciseTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  repCountBox: {
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  repNumber: {
-    fontSize: 18,
     fontWeight: '900',
+    letterSpacing: 0.5,
   },
-  repLabel: {
+  targetBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  targetText: {
     fontSize: 9.5,
     fontWeight: '700',
   },
-  animationStage: {
-    height: 140,
+  exerciseTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  repCounterCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    minWidth: 70,
+  },
+  repBigNumber: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  repSmallLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  kineticStage: {
+    height: 160,
     borderRadius: 16,
     borderWidth: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
   },
-  pulseRing: {
+  auraRing: {
     position: 'absolute',
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 3,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
   },
-  coreCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+  kineticCore: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
-    elevation: 4,
-    marginBottom: 8,
+    elevation: 6,
   },
-  tempoInfoOverlay: {
+  tempoInstructionBox: {
+    position: 'absolute',
+    bottom: 10,
     alignItems: 'center',
-    marginTop: 4,
+    gap: 2,
   },
-  tempoPhaseText: {
-    fontSize: 12,
+  tempoPhaseName: {
+    fontSize: 12.5,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  breathingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  breathingText: {
+    fontSize: 10.5,
+    fontWeight: '600',
+  },
+  formCueBox: {
+    padding: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  formCueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  formCueTitle: {
+    fontSize: 11.5,
     fontWeight: '800',
+  },
+  cueItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+  },
+  cueText: {
+    fontSize: 11,
+    lineHeight: 15,
+    flex: 1,
   },
   controlRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
-  playBtn: {
+  mainPlayBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    paddingVertical: 12,
     gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
-  btnText: {
+  mainPlayBtnText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
   },
   resetBtn: {
-    width: 44,
-    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  },
+  resetBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

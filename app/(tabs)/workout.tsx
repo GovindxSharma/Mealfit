@@ -435,6 +435,40 @@ export default function WorkoutScreen() {
               ? 'cooldown'
               : 'strength'
           }
+          targetMuscle={
+            selectedPhase === 'cardio'
+              ? 'Cardiovascular & VO2 Max'
+              : selectedPhase === 'warmup'
+              ? 'Shoulders, Hips & Ankles'
+              : selectedPhase === 'cooldown'
+              ? 'Hamstrings & Central Nervous System'
+              : 'Quadriceps, Chest & Core'
+          }
+          formCues={
+            selectedPhase === 'cardio'
+              ? [
+                  'Maintain upright posture with slight forward lean from ankles',
+                  'Land softly on mid-foot with 170-180 strides per minute',
+                  'Rhythmic diaphragmatic nasal breathing',
+                ]
+              : selectedPhase === 'warmup'
+              ? [
+                  'Perform slow circular rotations to lubricate synovial joint fluid',
+                  'Activate glute medius and thoracic spine prior to loading',
+                  'Never bounce aggressively into stiff cold muscle fibers',
+                ]
+              : selectedPhase === 'cooldown'
+              ? [
+                  'Hold each static stretch for 25-30 seconds without pain',
+                  'Take 4-second deep nasal inhales and 6-second slow exhales',
+                  'Downregulates cortisol and accelerates muscle recovery',
+                ]
+              : [
+                  '3-second eccentric lowering phase to maximize muscle hypertrophy',
+                  'Keep core firmly braced and spine neutral throughout movement',
+                  'Explode up with full hip drive and deliberate peak contraction',
+                ]
+          }
         />
 
         {/* Phase Header Banner */}
@@ -520,7 +554,7 @@ export default function WorkoutScreen() {
 
               {/* Form Guidance Note */}
               <Text style={[styles.exerciseNotes, { color: theme.textSecondary }]}>
-                📌 <Text style={{ fontWeight: '700' }}>Form Tip:</Text> {exercise.notes}
+                <Text style={{ fontWeight: '700', color: theme.primary }}>Form Tip: </Text>{exercise.notes}
               </Text>
 
               {/* Action Button: Mark Completed */}

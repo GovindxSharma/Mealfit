@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth, DietaryType, EquipmentType } from '../context/AuthContext';
+import { useAuth, DietaryType, EquipmentType, GoalType } from '../context/AuthContext';
 import { NotificationService } from '../services/notificationService';
 import { useRouter } from 'expo-router';
 import {
@@ -34,6 +34,7 @@ import {
   LogIn,
   Leaf,
   Egg,
+  Scale,
 } from 'lucide-react-native';
 import { SecurityVaultModal } from './SecurityVaultModal';
 
@@ -62,6 +63,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [budget, setBudget] = useState<number>(user.weeklyBudgetInr);
   const [equipment, setEquipment] = useState<EquipmentType[]>(user.equipment);
   const [city, setCity] = useState<string>(user.city);
+  const [goalType, setGoalType] = useState<GoalType>(user.goalType || 'fat_loss');
+  const [weight, setWeight] = useState<string>(String(user.weightKg || 70));
+  const [targetWeight, setTargetWeight] = useState<string>(String(user.targetWeightKg || 65));
   const [waterNotif, setWaterNotif] = useState(user.notifications.water);
   const [mealNotif, setMealNotif] = useState(user.notifications.meals);
   const [workoutNotif, setWorkoutNotif] = useState(user.notifications.workouts);
@@ -74,6 +78,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setBudget(user.weeklyBudgetInr);
     setEquipment(user.equipment);
     setCity(user.city);
+    setGoalType(user.goalType || 'fat_loss');
+    setWeight(String(user.weightKg || 70));
+    setTargetWeight(String(user.targetWeightKg || 65));
     setWaterNotif(user.notifications.water);
     setMealNotif(user.notifications.meals);
     setWorkoutNotif(user.notifications.workouts);
@@ -90,6 +97,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleSave = () => {
+    const w = parseFloat(weight) || user.weightKg || 70;
+    const tw = parseFloat(targetWeight) || user.targetWeightKg || 65;
+
     updateUserProfile({
       fullName: name.trim() || 'Govind Sharma',
       email: email.trim(),
@@ -97,13 +107,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       weeklyBudgetInr: budget,
       equipment,
       city,
+      goalType,
+      weightKg: w,
+      targetWeightKg: tw,
       notifications: {
         water: waterNotif,
         meals: mealNotif,
         workouts: workoutNotif,
       },
     });
-    Alert.alert('✅ Profile Saved', 'Your name and preferences have been updated and saved permanently.');
+    Alert.alert('Profile Saved', 'Your name, goals, and preferences have been updated.');
     onClose();
   };
 
@@ -240,6 +253,79 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </View>
             </View>
 
+            {/* Goal & Weight Targets */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Scale size={15} color={theme.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>FITNESS GOAL & TARGET WEIGHT</Text>
+              </View>
+
+              <View style={styles.pillRowWrap}>
+                {[
+                  { key: 'fat_loss', label: 'Fat Loss' },
+                  { key: 'muscle_gain', label: 'Muscle Gain' },
+                  { key: 'recomp', label: 'Body Recomp' },
+                  { key: 'low_gi_pcod', label: 'Low GI / PCOD' },
+                ].map((g) => (
+                  <TouchableOpacity
+                    key={g.key}
+                    onPress={() => setGoalType(g.key as GoalType)}
+                    style={[
+                      styles.dietPill,
+                      {
+                        backgroundColor: goalType === g.key ? theme.primaryLight : 'rgba(255, 255, 255, 0.03)',
+                        borderColor: goalType === g.key ? theme.primary : theme.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dietText,
+                        { color: goalType === g.key ? theme.primary : theme.textSecondary },
+                      ]}
+                    >
+                      {g.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Current Weight (kg)</Text>
+                  <TextInput
+                    value={weight}
+                    onChangeText={setWeight}
+                    keyboardType="numeric"
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.backgroundSecondary,
+                        borderColor: theme.cardBorder,
+                        color: theme.textPrimary,
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Target Weight (kg)</Text>
+                  <TextInput
+                    value={targetWeight}
+                    onChangeText={setTargetWeight}
+                    keyboardType="numeric"
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.backgroundSecondary,
+                        borderColor: theme.cardBorder,
+                        color: theme.textPrimary,
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            </View>
+
             {/* 2. Dietary Preference */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>DIETARY PREFERENCE</Text>
@@ -286,7 +372,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <Text style={[styles.budgetLabel, { color: theme.amber }]}>₹{budget}/week</Text>
               </View>
               <View style={styles.pillRowWrap}>
-                {[500, 650, 800, 1000, 1500, 2000].map((b) => (
+                {[300, 450, 600, 800, 1200, 1800].map((b) => (
                   <TouchableOpacity
                     key={b}
                     onPress={() => setBudget(b)}

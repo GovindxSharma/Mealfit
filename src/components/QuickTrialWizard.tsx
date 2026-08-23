@@ -334,7 +334,7 @@ export const QuickTrialWizard: React.FC<QuickPlanWizardProps> = ({ visible, onCl
                     <Text style={[styles.budgetValText, { color: theme.amber }]}>₹{budget}/week</Text>
                   </View>
                   <View style={styles.budgetRow}>
-                    {[600, 1000, 1500, 2000].map((b) => (
+                    {[300, 500, 800, 1500].map((b) => (
                       <TouchableOpacity
                         key={b}
                         onPress={() => setBudget(b)}
