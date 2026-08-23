@@ -15,6 +15,33 @@ export interface GoogleUserProfile {
 }
 
 export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
-  // Pure native mobile Google authentication
+  // 1. In Standalone APK: Execute native Google Play Services bottom-sheet
+  try {
+    const GoogleSigninModule = require('@react-native-google-signin/google-signin');
+    if (GoogleSigninModule && GoogleSigninModule.GoogleSignin) {
+      const { GoogleSignin } = GoogleSigninModule;
+      GoogleSignin.configure({
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: true,
+      });
+
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const signInResult = await GoogleSignin.signIn();
+      const googleUser = signInResult?.data?.user || signInResult?.user;
+      if (googleUser && googleUser.email) {
+        return {
+          email: googleUser.email,
+          fullName: googleUser.name || googleUser.givenName || 'Google Member',
+          avatarUrl: googleUser.photo,
+          googleId: googleUser.id,
+          idToken: signInResult?.data?.idToken || signInResult?.idToken,
+        };
+      }
+    }
+  } catch (err: any) {
+    console.log('[Google Auth] Native GoogleSignin caught:', err?.message || err);
+  }
+
+  // 2. Fallback to in-app Google prompt
   throw new Error('Google Sign-In prompt');
 };
