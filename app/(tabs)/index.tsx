@@ -100,16 +100,6 @@ export default function HomeScreen() {
     NotificationService.requestPermissions();
   }, [selectedCity]);
 
-  useEffect(() => {
-    // Prompt onboarding questionnaire immediately if not completed yet
-    if (!hasCompletedOnboarding) {
-      const timer = setTimeout(() => {
-        setShowPlanWizard(true);
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [hasCompletedOnboarding]);
-
   const loadWeatherData = async (city: string) => {
     setLoadingWeather(true);
     try {
