@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { HapticService } from '../services/hapticService';
 import {
   Play,
   Pause,
@@ -96,6 +97,7 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
             setTempoPhase('concentric');
             setTempoSeconds(1);
             setBreathingCue('Exhale & Drive with power!');
+            HapticService.light();
             Animated.timing(contractionAnim, {
               toValue: 0,
               duration: 300,
@@ -103,6 +105,7 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
             }).start();
           } else {
             setRepCount((prev) => prev + 1);
+            HapticService.success();
             currentStep = 3;
             setTempoPhase('eccentric');
             setTempoSeconds(3);

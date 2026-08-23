@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, MealSlot } from '../context/AuthContext';
+import { HapticService } from '../services/hapticService';
 import {
   Utensils,
   X,
@@ -91,6 +92,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
       costInr: food.costInr,
       date: selectedHistoryDate,
     });
+    HapticService.success();
     onClose();
   };
 
@@ -116,6 +118,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
       costInr: cost,
       date: selectedHistoryDate,
     });
+    HapticService.success();
 
     setCustomName('');
     onClose();
