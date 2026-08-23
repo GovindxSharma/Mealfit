@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MobileApiService } from '../../src/services/api';
@@ -136,10 +137,6 @@ export default function HomeScreen() {
   const loggedMealProtein = katoriCount * 8.5 + rotiCount * 2.6;
 
   const handleQuickAddMeal = () => {
-    if (!isLoggedIn) {
-      setShowAuthGate(true);
-      return;
-    }
     toggleMealLogged(
       `quick_meal_${Date.now()}`,
       loggedMealCalories,
@@ -147,6 +144,12 @@ export default function HomeScreen() {
       rotiCount * 15 + katoriCount * 18,
       (hasDesiGhee ? rotiCount * 5 : 0) + katoriCount * 3
     );
+    Alert.alert('✅ Meal Logged!', `Added ${katoriCount} katoris & ${rotiCount} phulkas (+${Math.round(loggedMealProtein)}g Protein, +${loggedMealCalories} kcal).`);
+  };
+
+  const handleQuickLogFoodItem = (name: string, cal: number, pro: number, carbs: number, fat: number) => {
+    toggleMealLogged(`quick_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`, cal, pro, carbs, fat);
+    Alert.alert('✅ Item Logged!', `Added ${name} (+${pro}g Protein, +${cal} kcal) to today's diary.`);
   };
 
   const handleLogMealPress = () => {
@@ -442,6 +445,41 @@ export default function HomeScreen() {
               <ChevronRight size={14} color={theme.textPrimary} />
             </View>
           </TouchableOpacity>
+        </View>
+
+        {/* 1-Tap Quick Indian Staples Bar */}
+        <View style={[styles.staplesCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={styles.staplesHeader}>
+            <Sparkles size={16} color={theme.primary} />
+            <Text style={[styles.staplesTitle, { color: theme.textPrimary }]}>1-Tap Indian Protein Staples</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.staplesScroll}>
+            {[
+              { name: 'Sattu Glass', cal: 220, pro: 22.5, c: 24, f: 4, cost: '₹12', tag: '+22.5g Pro' },
+              { name: 'Yellow Dal (1 Bowl)', cal: 140, pro: 9, c: 18, f: 3, cost: '₹14', tag: '+9g Pro' },
+              { name: 'Soya Bhurji (60g)', cal: 210, pro: 32, c: 12, f: 2, cost: '₹18', tag: '+32g Pro' },
+              { name: 'Ghar Ka Dahi (150g)', cal: 120, pro: 8, c: 6, f: 6, cost: '₹15', tag: '+8g Pro' },
+              { name: '3 Boiled Eggs', cal: 210, pro: 18, c: 1, f: 14, cost: '₹21', tag: '+18g Pro' },
+              { name: 'Paneer Cubes (80g)', cal: 240, pro: 15, c: 3, f: 18, cost: '₹36', tag: '+15g Pro' },
+            ].map((item, idx) => (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => handleQuickLogFoodItem(item.name, item.cal, item.pro, item.c, item.f)}
+                style={[styles.staplePill, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder }]}
+                activeOpacity={0.75}
+              >
+                <View style={styles.stapleTopRow}>
+                  <Text style={[styles.stapleName, { color: theme.textPrimary }]}>{item.name}</Text>
+                  <View style={[styles.stapleBadge, { backgroundColor: theme.primaryLight }]}>
+                    <Text style={[styles.stapleBadgeText, { color: theme.primary }]}>{item.tag}</Text>
+                  </View>
+                </View>
+                <Text style={[styles.stapleMeta, { color: theme.textSecondary }]}>
+                  {item.cal} kcal • {item.cost}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
         {/* 4. Quick Volumetric Logger */}
@@ -967,6 +1005,55 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  staplesCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+  },
+  staplesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  staplesTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  staplesScroll: {
+    gap: 10,
+    paddingVertical: 2,
+  },
+  staplePill: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    minWidth: 140,
+    gap: 4,
+  },
+  stapleTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  stapleName: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stapleBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  stapleBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  stapleMeta: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   loggerCard: {
     borderRadius: 20,

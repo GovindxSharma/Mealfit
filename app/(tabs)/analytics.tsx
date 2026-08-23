@@ -187,6 +187,44 @@ export default function AnalyticsScreen() {
           </View>
         </View>
 
+        {/* 4. AI Body Transformation Projection Engine */}
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={styles.cardHeader}>
+            <View style={styles.headerTitleRow}>
+              <Sparkles size={18} color={theme.amber} />
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Target Projection Timeline</Text>
+            </View>
+            <View style={[styles.projectionPill, { backgroundColor: theme.amberLight }]}>
+              <Text style={[styles.projectionPillText, { color: theme.amber }]}>ICMR Safe Pace</Text>
+            </View>
+          </View>
+
+          <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
+            Based on your {user.goalType === 'muscle_gain' ? 'caloric surplus' : 'daily 300-500 kcal deficit'} & Indian protein split.
+          </Text>
+
+          <View style={styles.projectionGrid}>
+            <View style={[styles.projectionBox, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder }]}>
+              <Text style={[styles.projValue, { color: theme.textPrimary }]}>{user.weightKg || 70} kg</Text>
+              <Text style={[styles.projLabel, { color: theme.textMuted }]}>Current Weight</Text>
+            </View>
+            <View style={[styles.projArrowCol]}>
+              <Text style={[styles.projArrowText, { color: theme.primary }]}>➔</Text>
+            </View>
+            <View style={[styles.projectionBox, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+              <Text style={[styles.projValue, { color: theme.primary }]}>{user.targetWeightKg || 65} kg</Text>
+              <Text style={[styles.projLabel, { color: theme.primary }]}>Goal Target</Text>
+            </View>
+          </View>
+
+          <View style={[styles.projectionEstimateBanner, { backgroundColor: theme.isDark ? '#1E293B' : '#F1F5F9' }]}>
+            <Zap size={14} color={theme.primary} />
+            <Text style={[styles.estimateBannerText, { color: theme.textPrimary }]}>
+              Estimated completion in <Text style={{ color: theme.primary, fontWeight: '900' }}>{Math.max(4, Math.round(Math.abs((user.weightKg || 70) - (user.targetWeightKg || 65)) / 0.45))} weeks</Text> with consistent Kirana meal logging!
+            </Text>
+          </View>
+        </View>
+
         {/* 4. Export Monthly PDF Report */}
         <TouchableOpacity
           onPress={handleExportPdf}
@@ -381,6 +419,59 @@ const styles = StyleSheet.create({
   barLabel: {
     fontSize: 10,
     fontWeight: '700',
+  },
+  projectionPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  projectionPillText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+  },
+  projectionGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 4,
+  },
+  projectionBox: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  projValue: {
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  projLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  projArrowCol: {
+    paddingHorizontal: 4,
+  },
+  projArrowText: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  projectionEstimateBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
+  },
+  estimateBannerText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 16,
   },
   exportBtn: {
     flexDirection: 'row',
