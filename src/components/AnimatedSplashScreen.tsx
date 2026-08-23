@@ -78,7 +78,7 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
           {/* Dynamic Sweeping Vitality Arc Emblem */}
           <View style={styles.logoBadge}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../assets/mealfit_icon_v2.png')}
               style={styles.splashIconImage}
               resizeMode="contain"
             />

@@ -219,7 +219,7 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <Image
-                source={require('../../assets/icon.png')}
+                source={require('../../assets/mealfit_icon_v2.png')}
                 style={[styles.avatarCircle, { borderColor: theme.primary }]}
                 resizeMode="cover"
               />

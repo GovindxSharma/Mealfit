@@ -5,11 +5,11 @@
     "owner": "govindxsharma",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/mealfit_icon_v2.png",
     "scheme": "mealfit",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/mealfit_splash_v2.png",
       "resizeMode": "contain",
       "backgroundColor": "#0A0E17"
     },
@@ -21,7 +21,7 @@
       "package": "com.govindxsharma.mealfit",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/mealfit_icon_v2.png",
         "backgroundColor": "#0A0E17"
       },
       "permissions": [
