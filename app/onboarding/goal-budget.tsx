@@ -76,7 +76,7 @@ export default function GoalBudgetScreen() {
           <Text style={styles.budgetValue}>₹{weeklyBudget} / wk</Text>
         </View>
         <View style={styles.budgetPillRow}>
-          {[700, 1000, 1400, 2000].map((b) => (
+          {[300, 450, 700, 1000, 1500].map((b) => (
             <TouchableOpacity
               key={b}
               onPress={() => setWeeklyBudget(b)}
