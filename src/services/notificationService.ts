@@ -1,18 +1,38 @@
-import { Vibration, Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { showInAppNotification } from '../components/NotificationBanner';
 import { HapticService } from './hapticService';
 
-// Configure foreground notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Detect if running inside Expo Go (which restricts native push in SDK 53/54)
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+  (Constants as any).appOwnership === 'expo';
+
+let expoNotificationsModule: typeof import('expo-notifications') | null = null;
+
+// Lazy load expo-notifications only in standalone builds / web-safe environments
+const getNotificationsModule = async () => {
+  if (Platform.OS === 'web' || isExpoGo) {
+    return null;
+  }
+  if (!expoNotificationsModule) {
+    try {
+      expoNotificationsModule = await import('expo-notifications');
+      expoNotificationsModule.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+    } catch (_) {
+      expoNotificationsModule = null;
+    }
+  }
+  return expoNotificationsModule;
+};
 
 export const NotificationService = {
   /**
@@ -20,6 +40,9 @@ export const NotificationService = {
    */
   async requestPermissions(): Promise<boolean> {
     if (Platform.OS === 'web') return false;
+    const Notifications = await getNotificationsModule();
+    if (!Notifications) return true; // Graceful fallback in Expo Go
+
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
@@ -34,7 +57,7 @@ export const NotificationService = {
   },
 
   /**
-   * Send an instant notification to the device (System Banner + In-App Banner + Haptic)
+   * Send an instant notification (Animated In-App Banner + Haptic + Native in APK)
    */
   async sendInstantNotification(
     title: string = 'MealFit Hydration Alert',
@@ -43,7 +66,7 @@ export const NotificationService = {
   ) {
     HapticService.light();
 
-    // 1. Show In-App animated toast
+    // 1. Show In-App animated toast banner (100% works everywhere across Expo Go & APK)
     showInAppNotification({
       id: `notif_${Date.now()}`,
       title,
@@ -51,8 +74,9 @@ export const NotificationService = {
       type: data.type || 'default',
     });
 
-    // 2. Trigger native device notification
-    if (Platform.OS !== 'web') {
+    // 2. Trigger native device notification in standalone builds
+    const Notifications = await getNotificationsModule();
+    if (Notifications) {
       try {
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -64,7 +88,7 @@ export const NotificationService = {
           trigger: null, // instant
         });
       } catch (err) {
-        // Fallback gracefully
+        // Ignored
       }
     }
   },
@@ -73,7 +97,9 @@ export const NotificationService = {
    * Schedule recurring daily meal & water reminders
    */
   async scheduleDailyReminders() {
-    if (Platform.OS === 'web') return;
+    const Notifications = await getNotificationsModule();
+    if (!Notifications) return;
+
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -127,6 +153,19 @@ export const NotificationService = {
           },
         });
       }
+
+      // Evening Dinner & Streak Check (8:30 PM)
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Dinner & Streak Saver',
+          body: 'Log your final meal of the day to keep your Indian Warrior streak alive and earn FitCoins!',
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: 20,
+          minute: 30,
+        },
+      });
     } catch (e) {
       // Ignored
     }
