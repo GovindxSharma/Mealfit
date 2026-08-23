@@ -5,13 +5,10 @@ import {
   Modal,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
-import { promptGoogleSignIn } from '../services/googleAuth';
 import { useRouter } from 'expo-router';
-import { Lock, ArrowRight, ShieldCheck, X } from 'lucide-react-native';
+import { Lock, ArrowRight, ShieldCheck, X, UserPlus, LogIn } from 'lucide-react-native';
 
 interface AuthRequiredModalProps {
   visible: boolean;
@@ -23,29 +20,20 @@ interface AuthRequiredModalProps {
 export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
   visible,
   onClose,
-  title = 'Account Required',
-  subtitle = 'Sign in with Google to sync your personalized Indian diet, macro logs & fitness streaks.',
+  title = 'Account Sync Required',
+  subtitle = 'Create a free profile or sign in to sync your personalized Indian diet, macro logs & fitness streaks across all devices.',
 }) => {
   const { theme } = useTheme();
-  const { loginWithGoogle } = useAuth();
   const router = useRouter();
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const googleUser = await promptGoogleSignIn();
-      await loginWithGoogle(googleUser);
-      onClose();
-    } catch (err: any) {
-      const msg = err?.message || String(err);
-      if (!msg.includes('cancelled') && !msg.includes('12501') && !msg.includes('dismiss')) {
-        Alert.alert('Google Sign-In', msg);
-      }
-    }
-  };
-
-  const handleGoToAuth = () => {
+  const handleSignIn = () => {
     onClose();
     router.push('/auth/login' as any);
+  };
+
+  const handleRegister = () => {
+    onClose();
+    router.push('/auth/register' as any);
   };
 
   return (
@@ -71,29 +59,37 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
           <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
 
-          {/* Google One-Tap Sign In */}
+          {/* Primary Action: Sign In */}
           <TouchableOpacity
-            onPress={handleGoogleSignIn}
+            onPress={handleSignIn}
+            style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
+            activeOpacity={0.85}
+          >
+            <LogIn size={18} color="#FFFFFF" />
+            <Text style={styles.primaryBtnText}>Sign In to MealFit</Text>
+            <ArrowRight size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Secondary Action: Create Account */}
+          <TouchableOpacity
+            onPress={handleRegister}
             style={[
-              styles.googleBtn,
-              { backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF', borderColor: theme.cardBorder },
+              styles.secondaryBtn,
+              { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
             ]}
             activeOpacity={0.85}
           >
-            <View style={styles.googleIconBox}>
-              <Text style={styles.googleG}>G</Text>
-            </View>
-            <Text style={[styles.googleBtnText, { color: theme.textPrimary }]}>
-              Continue with Google
+            <UserPlus size={16} color={theme.textPrimary} />
+            <Text style={[styles.secondaryBtnText, { color: theme.textPrimary }]}>
+              Create Free Profile
             </Text>
-            <ArrowRight size={16} color={theme.primary} />
           </TouchableOpacity>
 
           {/* Trust note */}
           <View style={styles.trustRow}>
             <ShieldCheck size={12} color={theme.primary} />
             <Text style={[styles.trustText, { color: theme.textMuted }]}>
-              Official Google OAuth 2.0 • 100% Free Forever
+              Secure Cloud Sync • 100% Free Forever
             </Text>
           </View>
         </View>
@@ -147,44 +143,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
-    marginBottom: 22,
+    marginBottom: 20,
     paddingHorizontal: 8,
   },
-  googleBtn: {
+  primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
     borderRadius: 14,
-    borderWidth: 1.5,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 10,
   },
-  googleIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EA4335',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  googleG: {
+  primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  googleBtnText: {
     fontSize: 15,
     fontWeight: '800',
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
+  },
+  secondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 8,
+  },
+  secondaryBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   trustRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 4,
   },
   trustText: {
     fontSize: 11,

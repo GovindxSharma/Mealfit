@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, EquipmentType } from '../../src/context/AuthContext';
 import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
+import { WorkoutAnimationCard } from '../../src/components/WorkoutAnimationCard';
 import {
   Dumbbell,
   Clock,
@@ -413,6 +414,28 @@ export default function WorkoutScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Interactive Visual Workout Animation & Rep Tempo Guide */}
+        <WorkoutAnimationCard
+          exerciseName={
+            selectedPhase === 'cardio'
+              ? 'Interval Running Cadence'
+              : selectedPhase === 'warmup'
+              ? 'Dynamic Joint Mobility & Inchworms'
+              : selectedPhase === 'cooldown'
+              ? 'Deep Diaphragmatic Breath & Stretch'
+              : 'Bodyweight Squats & Push-Ups'
+          }
+          category={
+            selectedPhase === 'cardio'
+              ? 'running'
+              : selectedPhase === 'warmup'
+              ? 'warmup'
+              : selectedPhase === 'cooldown'
+              ? 'cooldown'
+              : 'strength'
+          }
+        />
 
         {/* Phase Header Banner */}
         <View style={styles.sectionHeaderRow}>

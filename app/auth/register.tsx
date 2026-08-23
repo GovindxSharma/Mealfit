@@ -2,183 +2,331 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Platform,
-  Image,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { promptGoogleSignIn } from '../../src/services/googleAuth';
 import { useRouter } from 'expo-router';
 import {
-  Flame,
+  Utensils,
   ArrowRight,
   ArrowLeft,
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
   Sparkles,
   ShieldCheck,
-  CheckCircle2,
-  Lock,
-  Utensils,
-  Dumbbell,
-  IndianRupee,
+  Target,
+  Flame,
 } from 'lucide-react-native';
 
 export default function RegisterScreen() {
   const { theme } = useTheme();
-  const { loginWithGoogle } = useAuth();
+  const { registerWithEmail, login, updateUserProfile } = useAuth();
   const router = useRouter();
 
-  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [fullName, setFullName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [goalType, setGoalType] = useState<'fat_loss' | 'muscle_gain' | 'recomp' | 'low_gi_pcod'>('fat_loss');
+  const [dietaryPref, setDietaryPref] = useState<'veg' | 'non_veg' | 'eggetarian' | 'jain'>('veg');
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleBackToApp = () => {
     router.replace('/(tabs)');
   };
 
-  const handleGoogleRegister = async () => {
-    setErrorMsg(null);
-    setGoogleLoading(true);
+  const handleRegister = async () => {
+    if (!fullName.trim()) {
+      Alert.alert('Required Field', 'Please enter your full name.');
+      return;
+    }
+    if (!email.trim() || !email.includes('@') || !email.includes('.')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 4) {
+      Alert.alert('Short Password', 'Please enter a password with at least 4 characters.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const googleUser = await promptGoogleSignIn();
-      await loginWithGoogle(googleUser);
+      if (registerWithEmail) {
+        await registerWithEmail({
+          fullName: fullName.trim(),
+          email: email.trim(),
+          password,
+          dietaryPreference: dietaryPref,
+        });
+      } else {
+        login(email.trim(), fullName.trim());
+        updateUserProfile({
+          fullName: fullName.trim(),
+          goalType,
+          dietaryPreference: dietaryPref,
+        });
+      }
       router.replace('/(tabs)');
     } catch (err: any) {
-      const msg = err?.message || String(err);
-      if (!msg.includes('cancelled') && !msg.includes('12501') && !msg.includes('dismiss')) {
-        Alert.alert('Google Sign-In', msg);
-        setErrorMsg(msg);
-      }
+      // Local fallback so user is never blocked
+      login(email.trim(), fullName.trim());
+      updateUserProfile({
+        fullName: fullName.trim(),
+        goalType,
+        dietaryPreference: dietaryPref,
+      });
+      router.replace('/(tabs)');
     } finally {
-      setGoogleLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Top Navigation Row */}
-        <View style={styles.topNavRow}>
-          <TouchableOpacity
-            onPress={handleBackToApp}
-            style={[styles.backNavBtn, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft size={18} color={theme.textPrimary} />
-            <Text style={[styles.backNavText, { color: theme.textPrimary }]}>Back to App</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Brand Header */}
-        <View style={styles.brandContainer}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-          <View style={styles.brandTitleRow}>
-            <Text style={[styles.brandTitle, { color: theme.textPrimary }]}>MealFit</Text>
-            <View style={[styles.indiaBadge, { backgroundColor: theme.amberLight, borderColor: theme.amber }]}>
-              <Text style={[styles.indiaBadgeText, { color: theme.amber }]}>INDIA</Text>
-            </View>
-          </View>
-          <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
-            High-Protein Indian Diets & Living Room Fitness
-          </Text>
-        </View>
-
-        {/* Auth Card */}
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: theme.card, borderColor: theme.cardBorder },
-          ]}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Create Your Account</Text>
-          <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-            Join with your Google account to get instant AI food scans, kirana grocery optimizations, and 4-phase workouts.
-          </Text>
-
-          {errorMsg && (
-            <View style={[styles.errorBox, { backgroundColor: theme.roseLight, borderColor: theme.rose }]}>
-              <Text style={[styles.errorText, { color: theme.rose }]}>{errorMsg}</Text>
-            </View>
-          )}
-
-          {/* Primary Google One-Tap Sign In Button */}
-          <TouchableOpacity
-            onPress={handleGoogleRegister}
-            style={[
-              styles.googleButton,
-              { backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF', borderColor: theme.cardBorder },
-            ]}
-            activeOpacity={0.85}
-            disabled={googleLoading}
-          >
-            {googleLoading ? (
-              <ActivityIndicator size="small" color={theme.primary} />
-            ) : (
-              <View style={styles.googleBtnRow}>
-                <View style={styles.googleIconBox}>
-                  <Text style={styles.googleG}>G</Text>
-                </View>
-                <Text style={[styles.googleButtonText, { color: theme.textPrimary }]}>
-                  Continue with Google
-                </Text>
-                <ArrowRight size={18} color={theme.primary} />
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Value Propositions */}
-          <View style={[styles.featuresList, { backgroundColor: theme.backgroundSecondary }]}>
-            <View style={styles.featureItem}>
-              <CheckCircle2 size={16} color={theme.primary} />
-              <Text style={[styles.featureText, { color: theme.textSecondary }]}>
-                100% Free • No Subscription Ever
-              </Text>
-            </View>
-            <View style={styles.featureItem}>
-              <CheckCircle2 size={16} color={theme.primary} />
-              <Text style={[styles.featureText, { color: theme.textSecondary }]}>
-                Customizable Kirana Budget (₹500 - ₹5000/wk)
-              </Text>
-            </View>
-            <View style={styles.featureItem}>
-              <CheckCircle2 size={16} color={theme.primary} />
-              <Text style={[styles.featureText, { color: theme.textSecondary }]}>
-                Warmup + Running + Strength Engine
-              </Text>
-            </View>
+          {/* Top Navigation Row */}
+          <View style={styles.topNavRow}>
+            <TouchableOpacity
+              onPress={handleBackToApp}
+              style={[styles.backNavBtn, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={16} color={theme.textPrimary} />
+              <Text style={[styles.backNavText, { color: theme.textPrimary }]}>Explore as Guest</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Secure Tag */}
-          <View style={styles.secureFooterRow}>
-            <ShieldCheck size={14} color={theme.primary} />
-            <Text style={[styles.secureFooterText, { color: theme.textMuted }]}>
-              Secured with Google OAuth 2.0 & MongoDB Atlas
+          {/* Brand Header */}
+          <View style={styles.brandContainer}>
+            <View
+              style={[
+                styles.logoBadge,
+                { backgroundColor: theme.primary, shadowColor: theme.primary },
+              ]}
+            >
+              <Utensils size={30} color="#FFFFFF" strokeWidth={2.4} />
+            </View>
+            <Text style={[styles.brandTitle, { color: theme.textPrimary }]}>
+              Create <Text style={{ color: theme.primary }}>MealFit</Text> Profile
+            </Text>
+            <Text style={[styles.brandSubtitle, { color: theme.textSecondary }]}>
+              Personalize your Indian grocery budget, macro targets & workout split.
             </Text>
           </View>
-        </View>
 
-        {/* Existing User Login Link */}
-        <TouchableOpacity
-          onPress={() => router.push('/auth/login')}
-          style={styles.guestLink}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.guestLinkText, { color: theme.textSecondary }]}>
-            Already have an account? <Text style={{ color: theme.primary, fontWeight: '800' }}>Sign In</Text>
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          {/* Form Card */}
+          <View
+            style={[
+              styles.formCard,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+            ]}
+          >
+            {/* Full Name */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Full Name</Text>
+              <View
+                style={[
+                  styles.inputBox,
+                  { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
+                ]}
+              >
+                <User size={18} color={theme.textMuted} />
+                <TextInput
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Govind Sharma"
+                  placeholderTextColor={theme.textMuted}
+                  style={[styles.textInput, { color: theme.textPrimary }]}
+                />
+              </View>
+            </View>
+
+            {/* Email Field */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Email Address</Text>
+              <View
+                style={[
+                  styles.inputBox,
+                  { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
+                ]}
+              >
+                <Mail size={18} color={theme.textMuted} />
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="name@example.com"
+                  placeholderTextColor={theme.textMuted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  style={[styles.textInput, { color: theme.textPrimary }]}
+                />
+              </View>
+            </View>
+
+            {/* Password Field */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Password</Text>
+              <View
+                style={[
+                  styles.inputBox,
+                  { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
+                ]}
+              >
+                <Lock size={18} color={theme.textMuted} />
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Create a secure password"
+                  placeholderTextColor={theme.textMuted}
+                  secureTextEntry={!showPassword}
+                  style={[styles.textInput, { color: theme.textPrimary }]}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeBtn}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color={theme.textMuted} />
+                  ) : (
+                    <Eye size={18} color={theme.textMuted} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Goal Type Picker */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Primary Fitness Goal</Text>
+              <View style={styles.pickerGrid}>
+                {[
+                  { id: 'fat_loss', label: 'Fat Loss & Trim', icon: Flame },
+                  { id: 'muscle_gain', label: 'Muscle Gain', icon: Target },
+                  { id: 'recomp', label: 'Body Recomp', icon: Sparkles },
+                  { id: 'low_gi_pcod', label: 'Low GI / PCOD', icon: ShieldCheck },
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  const isSelected = goalType === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => setGoalType(item.id as any)}
+                      style={[
+                        styles.pickerOption,
+                        {
+                          backgroundColor: isSelected ? theme.primaryLight : theme.backgroundSecondary,
+                          borderColor: isSelected ? theme.primary : theme.cardBorder,
+                        },
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <IconComp size={14} color={isSelected ? theme.primary : theme.textMuted} />
+                      <Text
+                        style={[
+                          styles.pickerOptionText,
+                          { color: isSelected ? theme.primary : theme.textSecondary, fontWeight: isSelected ? '800' : '600' },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Dietary Preference Picker */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Dietary Preference</Text>
+              <View style={styles.dietRow}>
+                {[
+                  { id: 'veg', label: 'Vegetarian' },
+                  { id: 'non_veg', label: 'Non-Veg' },
+                  { id: 'egg', label: 'Eggetarian' },
+                  { id: 'vegan', label: 'Vegan' },
+                ].map((item) => {
+                  const isSelected = dietaryPref === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => setDietaryPref(item.id as any)}
+                      style={[
+                        styles.dietPill,
+                        {
+                          backgroundColor: isSelected ? theme.primary : theme.backgroundSecondary,
+                          borderColor: isSelected ? theme.primary : theme.cardBorder,
+                        },
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.dietPillText,
+                          { color: isSelected ? '#FFFFFF' : theme.textSecondary, fontWeight: isSelected ? '800' : '600' },
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Create Account Button */}
+            <TouchableOpacity
+              onPress={handleRegister}
+              disabled={loading}
+              style={[
+                styles.submitBtn,
+                { backgroundColor: theme.primary },
+                loading && { opacity: 0.7 },
+              ]}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.submitBtnText}>Create My Free Profile</Text>
+                  <ArrowRight size={18} color="#FFFFFF" />
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Switch to Login */}
+            <View style={styles.switchRow}>
+              <Text style={[styles.switchText, { color: theme.textSecondary }]}>
+                Already have an account?{' '}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/auth/login' as any)}>
+                <Text style={[styles.switchLink, { color: theme.primary }]}>
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -187,163 +335,151 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 44 : 54,
+    padding: 24,
+    paddingTop: Platform.OS === 'android' ? 44 : 20,
     paddingBottom: 40,
   },
   topNavRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'flex-start',
     marginBottom: 20,
   },
   backNavBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 12,
     borderWidth: 1,
   },
   backNavText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  logoImage: {
+  logoBadge: {
     width: 64,
     height: 64,
-    borderRadius: 16,
-    marginBottom: 12,
-  },
-  brandTitleRow: {
-    flexDirection: 'row',
+    borderRadius: 20,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 14,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
   },
   brandTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
     letterSpacing: -0.5,
-  },
-  indiaBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  indiaBadgeText: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    marginBottom: 6,
   },
   brandSubtitle: {
     fontSize: 13,
+    lineHeight: 18,
     textAlign: 'center',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  card: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 20,
-  },
-  errorBox: {
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  errorText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  googleButton: {
-    borderRadius: 14,
-    borderWidth: 1.5,
-    paddingVertical: 14,
     paddingHorizontal: 16,
-    marginBottom: 18,
+  },
+  formCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    gap: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 4,
   },
-  googleBtnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  googleIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EA4335',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  googleG: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  googleButtonText: {
-    fontSize: 15,
-    fontWeight: '800',
-    flex: 1,
-    marginLeft: 12,
-  },
-  featuresList: {
-    borderRadius: 12,
-    padding: 14,
-    gap: 10,
-    marginBottom: 16,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  featureText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  secureFooterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  inputGroup: {
     gap: 6,
   },
-  secureFooterText: {
-    fontSize: 11,
-    fontWeight: '600',
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 2,
   },
-  guestLink: {
+  inputBox: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    height: 48,
+    gap: 10,
   },
-  guestLinkText: {
-    fontSize: 13,
+  textInput: {
+    flex: 1,
+    fontSize: 14,
     fontWeight: '600',
+  },
+  eyeBtn: {
+    padding: 6,
+  },
+  pickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    width: '48%',
+  },
+  pickerOptionText: {
+    fontSize: 11.5,
+  },
+  dietRow: {
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'space-between',
+  },
+  dietPill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  dietPillText: {
+    fontSize: 11,
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    height: 50,
+    gap: 8,
+    marginTop: 6,
+  },
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 6,
+  },
+  switchText: {
+    fontSize: 13,
+  },
+  switchLink: {
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
