@@ -20,44 +20,19 @@ import {
   Check,
   Sparkles,
   IndianRupee,
+  Info,
 } from 'lucide-react-native';
+import {
+  INDIAN_FOOD_DATABASE,
+  searchIndianFoodDatabase,
+  IndianFoodItem,
+} from '../services/indianFoodDatabase';
 
 interface CustomMealModalProps {
   visible: boolean;
   onClose: () => void;
   initialSlot?: MealSlot;
 }
-
-interface PresetFood {
-  name: string;
-  hindiName: string;
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-  quantity: string;
-  costInr: number;
-  category: 'staple' | 'protein' | 'snack' | 'carb';
-}
-
-const INDIAN_FOOD_DATABASE: PresetFood[] = [
-  { name: 'Soya Chunks Curry', hindiName: 'सोया चंक्स करी', calories: 240, proteinG: 26.0, carbsG: 16, fatG: 4.0, quantity: '50g Chunks (1 Bowl)', costInr: 12, category: 'protein' },
-  { name: 'Chana Sattu Buttermilk', hindiName: 'चना सत्तू नमकीन छाछ', calories: 220, proteinG: 22.5, carbsG: 26, fatG: 3.5, quantity: '1 Big Glass (300ml)', costInr: 12, category: 'protein' },
-  { name: 'Boiled Whole Eggs (3 Eggs)', hindiName: 'उबले अंडे', calories: 210, proteinG: 18.0, carbsG: 1.5, fatG: 14.0, quantity: '3 Large Eggs', costInr: 21, category: 'protein' },
-  { name: 'Egg White Bhurji (4 Whites)', hindiName: 'अंडा भुर्जी (4 सफेदी)', calories: 95, proteinG: 16.5, carbsG: 2.0, fatG: 1.5, quantity: '4 Egg Whites', costInr: 28, category: 'protein' },
-  { name: 'Low Fat Paneer Bhurji', hindiName: 'पनीर भुर्जी', calories: 260, proteinG: 20.0, carbsG: 6.0, fatG: 16.0, quantity: '100g Low Fat Paneer', costInr: 40, category: 'protein' },
-  { name: 'Yellow Moong Dal Tadka', hindiName: 'मूंग दाल तड़का', calories: 150, proteinG: 9.5, carbsG: 22, fatG: 3.0, quantity: '1 Katori (150ml)', costInr: 10, category: 'staple' },
-  { name: 'Whole Wheat Phulka / Roti', hindiName: 'गेहूं की रोटी (सूखी)', calories: 80, proteinG: 2.6, carbsG: 16, fatG: 0.5, quantity: '1 Medium Roti', costInr: 3, category: 'carb' },
-  { name: 'Ghar Ka Dahi (Curd)', hindiName: 'घर का ताजा दही', calories: 100, proteinG: 4.5, carbsG: 6.0, fatG: 5.5, quantity: '1 Medium Katori (120g)', costInr: 8, category: 'staple' },
-  { name: 'Sprouted Kala Chana Chaat', hindiName: 'अंकुरित काला चना', calories: 210, proteinG: 13.0, carbsG: 32, fatG: 2.5, quantity: '1 Bowl (150g)', costInr: 10, category: 'protein' },
-  { name: 'Roasted Peanuts (Moongfali)', hindiName: 'भुनी मूंगफली', calories: 170, proteinG: 7.5, carbsG: 6.0, fatG: 14.0, quantity: '1 Handful (30g)', costInr: 7, category: 'snack' },
-  { name: 'Besan Chilla with Paneer', hindiName: 'बेसन चीला + पनीर', calories: 280, proteinG: 16.0, carbsG: 24, fatG: 12.0, quantity: '1 Large Chilla', costInr: 25, category: 'protein' },
-  { name: 'Rajma Masala Curry', hindiName: 'राजमा मसाला', calories: 230, proteinG: 12.0, carbsG: 38, fatG: 4.5, quantity: '1 Big Bowl (200ml)', costInr: 18, category: 'staple' },
-  { name: 'Chole (Kabuli Chana)', hindiName: 'चना मसाला', calories: 250, proteinG: 11.5, carbsG: 40, fatG: 5.5, quantity: '1 Big Bowl (200ml)', costInr: 20, category: 'staple' },
-  { name: 'Chicken Breast Curry / Roast', hindiName: 'चिकन ब्रेस्ट करी', calories: 240, proteinG: 31.0, carbsG: 2.0, fatG: 11.0, quantity: '120g Boneless Chicken', costInr: 45, category: 'protein' },
-  { name: 'Masala Oats with Veggies', hindiName: 'मसाला ओट्स', calories: 220, proteinG: 8.5, carbsG: 36, fatG: 4.5, quantity: '1 Bowl (50g Oats)', costInr: 18, category: 'carb' },
-  { name: 'Desi Chai (1 Cup, 1 tsp Sugar)', hindiName: 'दूध वाली चाय', calories: 75, proteinG: 2.0, carbsG: 9.0, fatG: 3.5, quantity: '1 Cup (120ml)', costInr: 6, category: 'snack' },
-];
 
 export const CustomMealModal: React.FC<CustomMealModalProps> = ({
   visible,
@@ -80,13 +55,9 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
   const [customQuantity, setCustomQuantity] = useState<string>('1 Serving');
   const [customCost, setCustomCost] = useState<string>('25');
 
-  const filteredFoods = INDIAN_FOOD_DATABASE.filter(
-    (f) =>
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.hindiName.includes(searchQuery)
-  );
+  const filteredFoods = searchIndianFoodDatabase(searchQuery);
 
-  const handleAddPreset = (food: PresetFood) => {
+  const handleAddPreset = (food: IndianFoodItem) => {
     addCustomMeal({
       name: food.name,
       hindiName: food.hindiName,
@@ -95,7 +66,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
       carbsG: food.carbsG,
       fatG: food.fatG,
       slot: selectedSlot,
-      quantity: food.quantity,
+      quantity: food.servingSize,
       costInr: food.costInr,
       date: selectedHistoryDate,
     });
@@ -282,7 +253,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
                         </Text>
                       </View>
                       <Text style={[styles.foodMeta, { color: theme.textSecondary }]}>
-                        {food.quantity} • ₹{food.costInr}
+                        {food.servingSize} • ₹{food.costInr}
                       </Text>
                     </View>
 

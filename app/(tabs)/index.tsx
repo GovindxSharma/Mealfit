@@ -24,6 +24,8 @@ import { LocationModal } from '../../src/components/LocationModal';
 import { SecurityVaultModal } from '../../src/components/SecurityVaultModal';
 import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import { MasterDietChartModal } from '../../src/components/MasterDietChartModal';
+import { SmartCheatDayModal } from '../../src/components/SmartCheatDayModal';
+import { RewardsHubModal } from '../../src/components/RewardsHubModal';
 import { NotificationService } from '../../src/services/notificationService';
 import { useRouter } from 'expo-router';
 import {
@@ -81,6 +83,8 @@ export default function HomeScreen() {
   const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
   const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
   const [showDietChartModal, setShowDietChartModal] = useState<boolean>(false);
+  const [showCheatModal, setShowCheatModal] = useState<boolean>(false);
+  const [showRewardsModal, setShowRewardsModal] = useState<boolean>(false);
 
   // Volumetric logger state
   const [katoriCount, setKatoriCount] = useState<number>(2);
@@ -437,6 +441,46 @@ export default function HomeScreen() {
               <ChevronRight size={14} color={theme.textPrimary} />
             </View>
           </TouchableOpacity>
+
+          {/* Smart Cheat Day & Banking Card */}
+          <TouchableOpacity
+            onPress={() => setShowCheatModal(true)}
+            style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: theme.amberLight }]}>
+              <Flame size={22} color={theme.amber} />
+            </View>
+            <View style={styles.actionTextBox}>
+              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>Smart Cheat Day & Banking</Text>
+              <Text style={[styles.actionSub, { color: theme.textSecondary }]}>
+                Bank calories for Biryani / Chole Bhature • Zero Fat Gain
+              </Text>
+            </View>
+            <View style={styles.actionArrowCircle}>
+              <ChevronRight size={14} color={theme.textPrimary} />
+            </View>
+          </TouchableOpacity>
+
+          {/* FitCoins & Rewards Hub Card */}
+          <TouchableOpacity
+            onPress={() => setShowRewardsModal(true)}
+            style={[styles.actionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: theme.secondaryLight }]}>
+              <Sparkles size={22} color={theme.primary} />
+            </View>
+            <View style={styles.actionTextBox}>
+              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>FitCoins & Streak Rewards</Text>
+              <Text style={[styles.actionSub, { color: theme.textSecondary }]}>
+                🪙 380 FitCoins • 5-Day Indian Warrior Streak
+              </Text>
+            </View>
+            <View style={styles.actionArrowCircle}>
+              <ChevronRight size={14} color={theme.textPrimary} />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Master Diet Chart & Nutrition Intelligence Banner */}
@@ -695,6 +739,15 @@ export default function HomeScreen() {
       <MasterDietChartModal
         visible={showDietChartModal}
         onClose={() => setShowDietChartModal(false)}
+      />
+      <SmartCheatDayModal
+        visible={showCheatModal}
+        onClose={() => setShowCheatModal(false)}
+      />
+      <RewardsHubModal
+        visible={showRewardsModal}
+        onClose={() => setShowRewardsModal(false)}
+        onOpenCheatPlanner={() => setShowCheatModal(true)}
       />
     </View>
   );
