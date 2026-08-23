@@ -39,7 +39,12 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
   ];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContainer, { backgroundColor: '#FFFFFF', borderColor: theme.cardBorder }]}>
           {/* Header */}

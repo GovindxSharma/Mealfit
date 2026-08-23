@@ -37,7 +37,12 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <View
           style={[

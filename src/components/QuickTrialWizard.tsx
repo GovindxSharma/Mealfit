@@ -95,7 +95,12 @@ export const QuickTrialWizard: React.FC<QuickPlanWizardProps> = ({ visible, onCl
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
         <View
           style={[

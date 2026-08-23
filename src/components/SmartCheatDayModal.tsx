@@ -129,7 +129,12 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
         <View
           style={[

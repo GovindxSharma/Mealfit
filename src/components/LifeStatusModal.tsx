@@ -64,7 +64,12 @@ export const LifeStatusModal: React.FC<LifeStatusModalProps> = ({ visible, onClo
   const currentBaseUrl = getApiBaseUrl();
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           {/* Header */}

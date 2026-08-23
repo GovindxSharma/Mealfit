@@ -30,7 +30,12 @@ export const SecurityVaultModal: React.FC<SecurityVaultModalProps> = ({ visible,
   const { theme } = useTheme();
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
       <View style={styles.modalOverlay}>
         <View
           style={[
