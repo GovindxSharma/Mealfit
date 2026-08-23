@@ -184,44 +184,51 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.contentContainer, { paddingTop: topSafeDistance }]}
       >
-        {/* 1. Header Bar: Profile, Theme Switcher, Weather & Settings */}
+        {/* 1. Header Bar: Balanced Before & After Sign-In Layout */}
         <View style={styles.topHeader}>
-          <TouchableOpacity
-            onPress={() => setShowSettings(true)}
-            style={styles.userProfileRow}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.avatarCircle, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
-              <Text style={[styles.avatarInitial, { color: theme.primary }]}>
-                {user.fullName && user.fullName !== 'New Member' ? user.fullName[0].toUpperCase() : 'M'}
-              </Text>
-            </View>
-            <View>
-              <Text style={[styles.greetingTitle, { color: theme.textPrimary }]}>
-                {user.fullName && user.fullName !== 'New Member' ? `Namaste, ${user.fullName.split(' ')[0]}` : 'Namaste, Seeker'}
-              </Text>
-              <View style={styles.roleRow}>
-                <View style={[styles.onlineDot, { backgroundColor: isLoggedIn ? theme.primary : theme.amber }]} />
-                <Text style={[styles.roleText, { color: theme.textSecondary }]}>
-                  {user.role === 'super_admin' ? 'Super Admin' : isLoggedIn ? 'Cloud Synced' : 'Waiting for Sign In'}
+          {isLoggedIn ? (
+            /* AFTER SIGN-IN: Clean User Avatar & Status */
+            <TouchableOpacity
+              onPress={() => setShowSettings(true)}
+              style={styles.userProfileRow}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.avatarCircle, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+                <Text style={[styles.avatarInitial, { color: theme.primary }]}>
+                  {user.fullName && user.fullName !== 'New Member' ? user.fullName[0].toUpperCase() : 'G'}
                 </Text>
               </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.greetingTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+                  {user.fullName && user.fullName !== 'New Member' ? `Namaste, ${user.fullName.split(' ')[0]}` : 'Namaste, Warrior'}
+                </Text>
+                <View style={styles.roleRow}>
+                  <View style={[styles.onlineDot, { backgroundColor: user.role === 'super_admin' ? theme.indigo : theme.primary }]} />
+                  <Text style={[styles.roleText, { color: theme.textSecondary }]}>
+                    {user.role === 'super_admin' ? 'Super Admin' : `${getGoalDisplayTitle(user.goalType)}`}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            /* BEFORE SIGN-IN: Clean Minimalist Brand Logo & Guest Mode */
+            <View style={styles.userProfileRow}>
+              <View style={[styles.avatarCircle, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+                <Flame size={18} color={theme.primary} />
+              </View>
+              <View>
+                <Text style={[styles.greetingTitle, { color: theme.textPrimary }]}>MealFit</Text>
+                <View style={styles.roleRow}>
+                  <View style={[styles.onlineDot, { backgroundColor: theme.amber }]} />
+                  <Text style={[styles.roleText, { color: theme.textSecondary }]}>Guest Mode</Text>
+                </View>
+              </View>
             </View>
-          </TouchableOpacity>
+          )}
 
+          {/* Right Header Action Buttons */}
           <View style={styles.headerActionRow}>
-            {/* Quick Sign In button if not logged in */}
-            {!isLoggedIn && (
-              <TouchableOpacity
-                onPress={() => router.push('/auth/login' as any)}
-                style={[styles.quickSignInBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.quickSignInText, { color: theme.primary }]}>Sign In</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Weather / Location Badge */}
+            {/* Weather / Location Pill */}
             <TouchableOpacity
               onPress={() => setShowLocationModal(true)}
               style={[styles.weatherBadge, { backgroundColor: theme.cyanLight, borderColor: 'rgba(20, 136, 166, 0.2)' }]}
@@ -233,55 +240,46 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Top Right Settings Gear Button */}
-            <TouchableOpacity
-              onPress={() => setShowSettings(true)}
-              style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-              activeOpacity={0.7}
-            >
-              <Settings size={18} color={theme.textPrimary} />
-            </TouchableOpacity>
+            {/* Before Sign-In: Direct Sign In Action Pill */}
+            {!isLoggedIn ? (
+              <TouchableOpacity
+                onPress={() => router.push('/auth/login' as any)}
+                style={[styles.quickSignInBtn, { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.quickSignInText, { color: '#FFFFFF' }]}>Sign In</Text>
+              </TouchableOpacity>
+            ) : (
+              /* After Sign-In: Sleek Settings Gear */
+              <TouchableOpacity
+                onPress={() => setShowSettings(true)}
+                style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+                activeOpacity={0.7}
+              >
+                <Settings size={17} color={theme.textPrimary} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        {/* Unauthenticated Onboarding / Sign-In Status Card */}
+        {/* 2. Before Sign-In Compact Banner (Replaces giant card) */}
         {!isLoggedIn && (
-          <View style={[styles.onboardingCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-            <View style={styles.onboardingCardTop}>
-              <View style={[styles.onboardingIconCircle, { backgroundColor: theme.primaryLight }]}>
-                <Sparkles size={16} color={theme.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.onboardingTitle, { color: theme.textPrimary }]}>
-                  Save & Protect Your Indian Diet
-                </Text>
-                <Text style={[styles.onboardingDesc, { color: theme.textSecondary }]}>
-                  Sign in or create an account to unlock the AI Food Scanner, record workout streaks, and sync across devices.
-                </Text>
-              </View>
+          <TouchableOpacity
+            onPress={() => router.push('/auth/login' as any)}
+            style={[styles.compactGuestBanner, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.guestBannerIconCircle, { backgroundColor: theme.primaryLight }]}>
+              <Sparkles size={14} color={theme.primary} />
             </View>
-            <View style={styles.onboardingActionRow}>
-              <TouchableOpacity
-                onPress={() => router.push('/auth/login' as any)}
-                style={[styles.onboardingPrimaryBtn, { backgroundColor: theme.primary }]}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.onboardingPrimaryBtnText, { color: '#FFFFFF' }]}>
-                  Sign In or Register
-                </Text>
-                <ArrowRight size={14} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setShowPlanWizard(true)}
-                style={styles.onboardingLoginLink}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.onboardingLoginLinkText, { color: theme.textMuted }]}>
-                  Edit Metrics
-                </Text>
-              </TouchableOpacity>
+            <Text style={[styles.guestBannerText, { color: theme.textSecondary }]} numberOfLines={1}>
+              Sign in to sync your food diary & unlock streaks
+            </Text>
+            <View style={[styles.guestBannerLinkPill, { backgroundColor: theme.primaryLight }]}>
+              <Text style={[styles.guestBannerLinkText, { color: theme.primary }]}>Sign In</Text>
+              <ArrowRight size={11} color={theme.primary} />
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* 2. Hero Interactive Daily Energy Balance Card */}
@@ -893,58 +891,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  onboardingCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-    gap: 12,
-  },
-  onboardingCardTop: {
+  compactGuestBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 8,
+    marginVertical: 4,
   },
-  onboardingIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  guestBannerIconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  onboardingTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  onboardingDesc: {
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 2,
-  },
-  onboardingActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  onboardingPrimaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 10,
-  },
-  onboardingPrimaryBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  onboardingLoginLink: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-  },
-  onboardingLoginLinkText: {
+  guestBannerText: {
+    flex: 1,
     fontSize: 11.5,
-    fontWeight: '700',
+    fontWeight: '600',
+  },
+  guestBannerLinkPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  guestBannerLinkText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   quickSignInBtn: {
     paddingHorizontal: 10,
