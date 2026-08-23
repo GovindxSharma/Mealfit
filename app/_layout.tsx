@@ -11,7 +11,19 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { Flame } from 'lucide-react-native';
 
-// Suppress benign SDK 54 deprecation logs so terminal is clean
+// Filter benign terminal deprecation warning
+const originalConsoleWarn = console.warn;
+console.warn = (...args: any[]) => {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('expo-av') || args[0].includes('Expo AV has been deprecated'))
+  ) {
+    return;
+  }
+  originalConsoleWarn(...args);
+};
+
+// Suppress benign SDK 54 deprecation logs so in-app UI is clean
 LogBox.ignoreLogs([
   '[expo-av]: Expo AV has been deprecated',
   'expo-notifications',
