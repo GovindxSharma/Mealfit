@@ -33,7 +33,7 @@ export default function LoginScreen() {
   const router = useRouter();
 
   const [email, setEmail] = useState<string>('govindsharma2839@gmail.com');
-  const [password, setPassword] = useState<string>('123456');
+  const [password, setPassword] = useState<string>('govind@1184');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 

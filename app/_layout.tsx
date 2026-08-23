@@ -7,7 +7,7 @@ import { DraggableLivePill } from '../src/components/DraggableLivePill';
 import { AnimatedSplashScreen } from '../src/components/AnimatedSplashScreen';
 import { NotificationBanner } from '../src/components/NotificationBanner';
 import { NotificationService } from '../src/services/notificationService';
-import { AuthProvider } from '../src/context/AuthContext';
+import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { Flame } from 'lucide-react-native';
 
@@ -31,6 +31,7 @@ LogBox.ignoreLogs([
 
 function LayoutNavigation() {
   const { theme } = useTheme();
+  const { isSuperAdmin } = useAuth();
   const [splashFinished, setSplashFinished] = useState<boolean>(false);
 
   useEffect(() => {
@@ -71,8 +72,8 @@ function LayoutNavigation() {
         />
       </Stack>
 
-      {/* Draggable Live Backend Status Pill - can be dragged and placed anywhere */}
-      <DraggableLivePill />
+      {/* Draggable Live Backend Status Pill - ONLY visible to Super Admin (Govind) */}
+      {isSuperAdmin && <DraggableLivePill />}
     </>
   );
 }

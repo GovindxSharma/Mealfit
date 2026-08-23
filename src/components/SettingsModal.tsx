@@ -54,7 +54,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenThemeModal,
 }) => {
   const { theme } = useTheme();
-  const { user, isLoggedIn, updateUserProfile, logout } = useAuth();
+  const { user, isLoggedIn, isSuperAdmin, updateUserProfile, logout } = useAuth();
   const router = useRouter();
 
   const [name, setName] = useState(user.fullName);
@@ -494,35 +494,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 />
               </View>
 
-              {/* Instant Notification Tester */}
-              <View style={{ marginTop: 8, gap: 6 }}>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: theme.textMuted }}>TEST LIVE NOTIFICATION ALERTS</Text>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <TouchableOpacity
-                    onPress={() => NotificationService.sendInstantNotification('MealFit Hydration Alert', 'Drink 1 fresh glass of water (+250mL) to hit your 8-glass goal!', { type: 'hydration' })}
-                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.cyanLight, alignItems: 'center' }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: theme.cyan }}>Water Alert</Text>
-                  </TouchableOpacity>
+              {/* Instant Notification Tester - ONLY visible to Super Admin (Govind) */}
+              {isSuperAdmin && (
+                <View style={{ marginTop: 8, gap: 6 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: theme.textMuted }}>ADMIN NOTIFICATION TESTER</Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity
+                      onPress={() => NotificationService.sendInstantNotification('MealFit Hydration Alert', 'Drink 1 fresh glass of water (+250mL) to hit your 8-glass goal!', { type: 'hydration' })}
+                      style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.cyanLight, alignItems: 'center' }}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: theme.cyan }}>Water Alert</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => NotificationService.sendPostMealNudge()}
-                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.primaryLight, alignItems: 'center' }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: theme.primary }}>Meal Alert</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => NotificationService.sendPostMealNudge()}
+                      style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.primaryLight, alignItems: 'center' }}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: theme.primary }}>Meal Alert</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => NotificationService.sendWorkoutReminder()}
-                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.indigoLight, alignItems: 'center' }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: theme.indigo }}>Workout</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => NotificationService.sendWorkoutReminder()}
+                      style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.indigoLight, alignItems: 'center' }}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: theme.indigo }}>Workout</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
+              )}
             </View>
 
             {/* 7. Security & Encryption Badge */}
@@ -548,50 +550,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </Text>
             </TouchableOpacity>
 
-            {/* Diagnostics & Links */}
-            <View style={styles.adminLinksRow}>
-              {onOpenThemeModal && (
-                <TouchableOpacity
-                  onPress={() => {
-                    onClose();
-                    onOpenThemeModal();
-                  }}
-                  style={[styles.diagBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
-                  activeOpacity={0.7}
-                >
-                  <Palette size={15} color={theme.primary} />
-                  <Text style={[styles.diagBtnText, { color: theme.primary }]}>Theme</Text>
-                </TouchableOpacity>
-              )}
+            {/* Diagnostics & Links - ONLY visible to Super Admin (Govind) */}
+            {isSuperAdmin && (
+              <View style={styles.adminLinksRow}>
+                {onOpenThemeModal && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      onClose();
+                      onOpenThemeModal();
+                    }}
+                    style={[styles.diagBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+                    activeOpacity={0.7}
+                  >
+                    <Palette size={15} color={theme.primary} />
+                    <Text style={[styles.diagBtnText, { color: theme.primary }]}>Theme</Text>
+                  </TouchableOpacity>
+                )}
 
-              {onOpenLifeStatus && (
-                <TouchableOpacity
-                  onPress={() => {
-                    onClose();
-                    onOpenLifeStatus();
-                  }}
-                  style={[styles.diagBtn, { backgroundColor: theme.cyanLight, borderColor: theme.cyan }]}
-                  activeOpacity={0.7}
-                >
-                  <Activity size={15} color={theme.cyan} />
-                  <Text style={[styles.diagBtnText, { color: theme.cyan }]}>Backend</Text>
-                </TouchableOpacity>
-              )}
+                {onOpenLifeStatus && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      onClose();
+                      onOpenLifeStatus();
+                    }}
+                    style={[styles.diagBtn, { backgroundColor: theme.cyanLight, borderColor: theme.cyan }]}
+                    activeOpacity={0.7}
+                  >
+                    <Activity size={15} color={theme.cyan} />
+                    <Text style={[styles.diagBtnText, { color: theme.cyan }]}>Backend</Text>
+                  </TouchableOpacity>
+                )}
 
-              {onOpenSuperAdmin && (
-                <TouchableOpacity
-                  onPress={() => {
-                    onClose();
-                    onOpenSuperAdmin();
-                  }}
-                  style={[styles.superAdminBtn, { backgroundColor: theme.indigoLight, borderColor: theme.indigo }]}
-                  activeOpacity={0.7}
-                >
-                  <Lock size={15} color={theme.indigo} />
-                  <Text style={[styles.superAdminBtnText, { color: theme.indigo }]}>Admin</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+                {onOpenSuperAdmin && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      onClose();
+                      onOpenSuperAdmin();
+                    }}
+                    style={[styles.superAdminBtn, { backgroundColor: theme.indigoLight, borderColor: theme.indigo }]}
+                    activeOpacity={0.7}
+                  >
+                    <Lock size={15} color={theme.indigo} />
+                    <Text style={[styles.superAdminBtnText, { color: theme.indigo }]}>Admin</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
             {/* Save Button */}
             <TouchableOpacity
