@@ -28,10 +28,10 @@ export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
       GoogleSignin.configure({
         webClientId: GOOGLE_WEB_CLIENT_ID,
         offlineAccess: false,
-        scopes: ['profile', 'email'],
       });
 
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      await GoogleSignin.signOut().catch(() => {});
       const signInResult = await GoogleSignin.signIn();
 
       const dataObj = (signInResult as any)?.data || signInResult;
