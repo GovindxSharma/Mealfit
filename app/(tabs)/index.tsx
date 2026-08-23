@@ -184,7 +184,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.contentContainer, { paddingTop: topSafeDistance }]}
       >
-        {/* 1. Header Bar: Balanced Before & After Sign-In Layout */}
+        {/* 1. Header Bar: Balanced, Unbreakable Flexbox Header */}
         <View style={styles.topHeader}>
           {isLoggedIn ? (
             /* AFTER SIGN-IN: Clean User Avatar & Status */
@@ -198,32 +198,36 @@ export default function HomeScreen() {
                   {user.fullName && user.fullName !== 'New Member' ? user.fullName[0].toUpperCase() : 'G'}
                 </Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.greetingTitle, { color: theme.textPrimary }]} numberOfLines={1}>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <Text style={[styles.greetingTitle, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
                   {user.fullName && user.fullName !== 'New Member' ? `Namaste, ${user.fullName.split(' ')[0]}` : 'Namaste, Warrior'}
                 </Text>
                 <View style={styles.roleRow}>
                   <View style={[styles.onlineDot, { backgroundColor: user.role === 'super_admin' ? theme.indigo : theme.primary }]} />
-                  <Text style={[styles.roleText, { color: theme.textSecondary }]}>
-                    {user.role === 'super_admin' ? 'Super Admin' : `${getGoalDisplayTitle(user.goalType)}`}
+                  <Text style={[styles.roleText, { color: theme.textSecondary }]} numberOfLines={1} ellipsizeMode="tail">
+                    {user.role === 'super_admin' ? 'Super Admin' : user.goalType ? getGoalDisplayTitle(user.goalType) : 'Member'}
                   </Text>
                 </View>
               </View>
             </TouchableOpacity>
           ) : (
             /* BEFORE SIGN-IN: Clean Minimalist Brand Logo & Guest Mode */
-            <View style={styles.userProfileRow}>
+            <TouchableOpacity
+              onPress={() => router.push('/auth/login' as any)}
+              style={styles.userProfileRow}
+              activeOpacity={0.8}
+            >
               <View style={[styles.avatarCircle, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
-                <Flame size={18} color={theme.primary} />
+                <Flame size={20} color={theme.primary} />
               </View>
-              <View>
-                <Text style={[styles.greetingTitle, { color: theme.textPrimary }]}>MealFit</Text>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <Text style={[styles.greetingTitle, { color: theme.textPrimary }]} numberOfLines={1}>MealFit</Text>
                 <View style={styles.roleRow}>
                   <View style={[styles.onlineDot, { backgroundColor: theme.amber }]} />
-                  <Text style={[styles.roleText, { color: theme.textSecondary }]}>Guest Mode</Text>
+                  <Text style={[styles.roleText, { color: theme.textSecondary }]} numberOfLines={1}>Guest Mode</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
 
           {/* Right Header Action Buttons: Weather + Settings Button */}
@@ -246,7 +250,7 @@ export default function HomeScreen() {
               style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
               activeOpacity={0.7}
             >
-              <Settings size={17} color={theme.textPrimary} />
+              <Settings size={19} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -809,12 +813,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 2,
+    gap: 8,
   },
   userProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flex: 1,
+    minWidth: 0,
   },
   guestSyncBanner: {
     flexDirection: 'row',
@@ -837,32 +844,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   avatarInitial: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
   },
   greetingTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   roleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
+    gap: 5,
+    marginTop: 1,
   },
   onlineDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
+    flexShrink: 0,
   },
   roleText: {
     fontSize: 11,
@@ -872,13 +881,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
-  themeBtn: {
-    padding: 8,
-    borderRadius: 10,
-    borderWidth: 1,
+  weatherBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  weatherBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   compactGuestBanner: {
     flexDirection: 'row',
@@ -926,19 +943,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
-  weatherBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  weatherBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
   securityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -959,6 +963,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,

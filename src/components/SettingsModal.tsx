@@ -122,16 +122,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleLogout = () => {
     Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out of your MealFit account? Your data is securely saved in the cloud.',
+      'Sign Out Confirmation',
+      'Are you sure you want to sign out of your MealFit account? Your local food logs will remain intact.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Log Out',
+          text: 'Sign Out',
           style: 'destructive',
           onPress: () => {
-            logout();
             onClose();
+            logout();
           },
         },
       ]
@@ -611,23 +611,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* Logout / Switch Account strictly at the bottom */}
             {isLoggedIn ? (
               <TouchableOpacity
-                onPress={() => {
-                  Alert.alert(
-                    'Sign Out Confirmation',
-                    'Are you sure you want to sign out of your MealFit account? Your local food logs will remain intact.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Sign Out',
-                        style: 'destructive',
-                        onPress: () => {
-                          onClose();
-                          handleLogout();
-                        },
-                      },
-                    ]
-                  );
-                }}
+                onPress={handleLogout}
                 style={[styles.bottomLogoutBtn, { backgroundColor: theme.roseLight, borderColor: theme.rose }]}
                 activeOpacity={0.8}
               >
