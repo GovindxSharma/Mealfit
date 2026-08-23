@@ -562,7 +562,7 @@ export default function WorkoutScreen() {
         visible={showAuthGate}
         onClose={() => setShowAuthGate(false)}
         title="Workout Streaks Locked"
-        subtitle="Sign in with Google to sync your workout history, calorie burn rings & athletic recovery milestones."
+        subtitle="Sign in to your MealFit account to sync your workout history, calorie burn rings & athletic recovery milestones."
       />
     </View>
   );

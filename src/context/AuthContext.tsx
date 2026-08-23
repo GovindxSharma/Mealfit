@@ -27,7 +27,7 @@ export interface UserProfile {
   fullName: string;
   email: string;
   avatarUrl?: string;
-  authProvider?: 'local' | 'google' | 'guest';
+  authProvider?: 'local' | 'guest';
   gender: 'male' | 'female';
   age: number;
   weightKg: number;
@@ -92,7 +92,6 @@ interface AuthContextType {
 
   login: (email: string, fullName?: string) => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>;
-  loginWithGoogle: (googleData: { email: string; fullName?: string; avatarUrl?: string; googleId?: string }) => Promise<void>;
   registerWithEmail: (data: {
     fullName: string;
     email: string;
@@ -280,7 +279,6 @@ const AuthContext = createContext<AuthContextType>({
   setHasCompletedOnboarding: () => {},
   login: () => {},
   loginWithEmail: async () => {},
-  loginWithGoogle: async () => {},
   registerWithEmail: async () => {},
   logout: () => {},
   continueAsGuest: () => {},
@@ -526,78 +524,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async (googleData: {
-    email: string;
-    fullName?: string;
-    avatarUrl?: string;
-    googleId?: string;
-    idToken?: string;
-  }) => {
-    try {
-      const res = await MobileApiService.loginWithGoogle({
-        idToken: googleData.idToken,
-        email: googleData.email,
-        fullName: googleData.fullName || user.fullName,
-        avatarUrl: googleData.avatarUrl,
-        googleId: googleData.googleId,
-        gender: user.gender,
-        heightCm: user.heightCm,
-        weightKg: user.weightKg,
-        targetWeightKg: user.targetWeightKg,
-        goalType: user.goalType,
-        dietaryPreference: user.dietaryPreference,
-        weeklyBudgetInr: user.weeklyBudgetInr,
-        city: user.city,
-        dailyCalorieTarget: user.dailyCalorieTarget,
-        proteinTargetG: user.proteinTargetG,
-        carbsTargetG: user.carbsTargetG,
-        fatTargetG: user.fatTargetG,
-      });
-
-      if (res?.token) {
-        setTokenState(res.token);
-        setAuthToken(res.token);
-        await SafeStorage.setItem('mealfit_auth_token', res.token);
-      }
-      if (res?.user) {
-        const u = res.user;
-        const updated: Partial<UserProfile> = {
-          id: u.id,
-          fullName: u.fullName || googleData.fullName || user.fullName,
-          email: u.email || googleData.email,
-          avatarUrl: u.avatarUrl || googleData.avatarUrl,
-          gender: u.gender || user.gender,
-          age: u.age || user.age,
-          heightCm: u.heightCm || user.heightCm,
-          weightKg: u.weightKg || user.weightKg,
-          targetWeightKg: u.targetWeightKg || user.targetWeightKg,
-          goalType: u.goalType || user.goalType,
-          city: u.city || user.city,
-          dietaryPreference: u.dietaryPreference || user.dietaryPreference,
-          weeklyBudgetInr: u.weeklyBudgetInr || user.weeklyBudgetInr,
-          authProvider: 'google',
-        };
-        setUser((prev) => ({ ...prev, ...updated }));
-        await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
-        
-        // Sync local stats to cloud
-        if (res?.token) {
-          MobileApiService.updateProfile(updated).catch(() => {});
-        }
-      }
-      setIsLoggedIn(true);
-      setIsGuest(false);
-      setHasCompletedOnboarding(true);
-    } catch (err) {
-      // Offline fallback
-      login(googleData.email, googleData.fullName);
-      if (googleData.avatarUrl) {
-        setUser((prev) => ({ ...prev, avatarUrl: googleData.avatarUrl, authProvider: 'google' }));
-      }
-      setHasCompletedOnboarding(true);
-    }
-  };
-
   const registerWithEmail = async (data: {
     fullName: string;
     email: string;
@@ -827,7 +753,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getDayTotals,
         login,
         loginWithEmail,
-        loginWithGoogle,
         registerWithEmail,
         logout,
         continueAsGuest,

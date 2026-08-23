@@ -243,7 +243,7 @@ export default function HomeScreen() {
                   Save & Protect Your Indian Diet
                 </Text>
                 <Text style={[styles.onboardingDesc, { color: theme.textSecondary }]}>
-                  Sign in with Google or Email to unlock the AI Food Scanner, record workout streaks, and sync across devices.
+                  Sign in or create an account to unlock the AI Food Scanner, record workout streaks, and sync across devices.
                 </Text>
               </View>
             </View>

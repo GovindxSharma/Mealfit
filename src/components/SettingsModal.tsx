@@ -14,7 +14,6 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, DietaryType, EquipmentType } from '../context/AuthContext';
 import { NotificationService } from '../services/notificationService';
-import { promptGoogleSignIn } from '../services/googleAuth';
 import { useRouter } from 'expo-router';
 import {
   X,
@@ -54,7 +53,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenThemeModal,
 }) => {
   const { theme } = useTheme();
-  const { user, isLoggedIn, updateUserProfile, logout, loginWithGoogle } = useAuth();
+  const { user, isLoggedIn, updateUserProfile, logout } = useAuth();
   const router = useRouter();
 
   const [name, setName] = useState(user.fullName);
@@ -67,7 +66,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [mealNotif, setMealNotif] = useState(user.notifications.meals);
   const [workoutNotif, setWorkoutNotif] = useState(user.notifications.workouts);
   const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
-  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setName(user.fullName);
@@ -81,21 +79,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setWorkoutNotif(user.notifications.workouts);
   }, [user]);
 
-  const handleGoogleDirectSignIn = async () => {
-    try {
-      setGoogleLoading(true);
-      const googleUser = await promptGoogleSignIn();
-      await loginWithGoogle(googleUser);
-    } catch (err: any) {
-      const msg = err?.message || String(err);
-      if (!msg.includes('cancelled') && !msg.includes('12501') && !msg.includes('dismiss')) {
-        Alert.alert('Google Sign-In', msg);
-      }
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
   const toggleEquipment = (item: EquipmentType) => {
     if (equipment.includes(item)) {
       if (equipment.length > 1) {
@@ -108,8 +91,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleSave = () => {
     updateUserProfile({
-      fullName: name,
-      email,
+      fullName: name.trim() || 'Govind Sharma',
+      email: email.trim(),
       dietaryPreference: diet,
       weeklyBudgetInr: budget,
       equipment,
@@ -120,6 +103,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         workouts: workoutNotif,
       },
     });
+    Alert.alert('✅ Profile Saved', 'Your name and preferences have been updated and saved permanently.');
     onClose();
   };
 
@@ -159,7 +143,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <View>
                 <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Settings & Profile</Text>
                 <Text style={[styles.headerSub, { color: theme.textSecondary }]}>
-                  {!isLoggedIn ? 'Waiting for Sign In • Local Storage' : `${user.authProvider === 'google' ? 'Google Account' : 'Verified Member'} • Cloud Synced`}
+                  {!isLoggedIn ? 'Guest Mode • Local Storage' : 'Verified Member • Cloud Synced'}
                 </Text>
               </View>
             </View>
@@ -181,11 +165,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             >
               <View style={styles.accountCardLeft}>
                 <View style={[styles.accountIconCircle, { backgroundColor: theme.card }]}>
-                  {user.authProvider === 'google' ? (
-                    <Text style={styles.googleMiniG}>G</Text>
-                  ) : (
-                    <User size={16} color={theme.primary} />
-                  )}
+                  <User size={16} color={theme.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.accountCardName, { color: theme.textPrimary }]}>
@@ -198,16 +178,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </View>
               {!isLoggedIn ? (
                 <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <TouchableOpacity
-                    onPress={handleGoogleDirectSignIn}
-                    style={[styles.accountActionBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: theme.cardBorder }]}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.googleMiniG}>G</Text>
-                    <Text style={[styles.accountActionText, { color: theme.textPrimary }]}>
-                      Google
-                    </Text>
-                  </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => {
                       onClose();
@@ -223,10 +193,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={[styles.verifiedPill, { backgroundColor: theme.card }]}>
-                  <ShieldCheck size={12} color={theme.primary} />
-                  <Text style={[styles.verifiedText, { color: theme.primary }]}>Synced</Text>
-                </View>
+                <TouchableOpacity
+                  onPress={handleLogout}
+                  style={[styles.logoutPill, { backgroundColor: theme.roseLight, borderColor: theme.rose }]}
+                  activeOpacity={0.75}
+                >
+                  <LogOut size={12} color={theme.rose} />
+                  <Text style={[styles.logoutPillText, { color: theme.rose }]}>Log Out</Text>
+                </TouchableOpacity>
               )}
             </View>
 
@@ -619,11 +593,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  googleMiniG: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#4285F4',
-  },
   accountCardName: {
     fontSize: 13.5,
     fontWeight: '800',
@@ -653,6 +622,19 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     fontSize: 10,
+    fontWeight: '800',
+  },
+  logoutPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  logoutPillText: {
+    fontSize: 11,
     fontWeight: '800',
   },
   section: {

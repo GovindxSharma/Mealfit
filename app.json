@@ -30,8 +30,7 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-font",
-      "@react-native-google-signin/google-signin"
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

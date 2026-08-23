@@ -66,7 +66,7 @@ export default function AnalyticsScreen() {
                 Cloud Progression Sync Locked
               </Text>
               <Text style={[styles.lockedBannerDesc, { color: theme.textSecondary }]}>
-                Sign in with Google or Email to securely backup your weight progression and monthly savings reports.
+                Sign in to your MealFit account to securely backup your weight progression and monthly savings reports.
               </Text>
             </View>
             <View style={[styles.unlockPill, { backgroundColor: theme.primary }]}>
@@ -241,7 +241,7 @@ export default function AnalyticsScreen() {
         visible={showAuthGate}
         onClose={() => setShowAuthGate(false)}
         title="Sync Cloud Analytics"
-        subtitle="Sign in with Google or Email to unlock 30-day weight progression curves and PDF export reports."
+        subtitle="Sign in to your MealFit account to unlock 30-day weight progression curves and PDF export reports."
       />
     </View>
   );

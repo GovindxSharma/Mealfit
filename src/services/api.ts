@@ -155,30 +155,6 @@ export const MobileApiService = {
       body: JSON.stringify(data),
     }),
 
-  loginWithGoogle: (data: {
-    idToken?: string;
-    email?: string;
-    fullName?: string;
-    avatarUrl?: string;
-    googleId?: string;
-    gender?: string;
-    heightCm?: number;
-    weightKg?: number;
-    targetWeightKg?: number;
-    goalType?: string;
-    dietaryPreference?: string;
-    weeklyBudgetInr?: number;
-    city?: string;
-    dailyCalorieTarget?: number;
-    proteinTargetG?: number;
-    carbsTargetG?: number;
-    fatTargetG?: number;
-  }) =>
-    fetchMobileApi<{ token: string; user: any }>('/auth/google', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
   getMe: () => fetchMobileApi<any>('/auth/me'),
   getProfile: () => fetchMobileApi<any>('/auth/me'),
 

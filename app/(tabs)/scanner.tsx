@@ -208,7 +208,7 @@ export default function SmartSwapsScreen() {
                 Member Intelligence Locked
               </Text>
               <Text style={[styles.lockedBannerDesc, { color: theme.textSecondary }]}>
-                Sign In with Google or Email to unlock the AI Food Scanner, Protein Linear Optimizer & Cheat Offsets.
+                Sign In to your MealFit account to unlock the AI Food Scanner, Protein Linear Optimizer & Cheat Offsets.
               </Text>
             </View>
             <View style={[styles.unlockPill, { backgroundColor: theme.primary }]}>
@@ -415,7 +415,7 @@ export default function SmartSwapsScreen() {
         visible={showAuthGate}
         onClose={() => setShowAuthGate(false)}
         title="Unlock Smart Swaps & AI Scanner"
-        subtitle="Sign in with Google or Email to unlock AI Multi-Curry Vision Scanner, full Indian protein swap database & cheat offsets."
+        subtitle="Sign in to your MealFit account to unlock AI Multi-Curry Vision Scanner, full Indian protein swap database & cheat offsets."
       />
     </View>
   );
