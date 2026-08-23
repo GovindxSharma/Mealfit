@@ -27,19 +27,28 @@ export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
 
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const signInResult = await GoogleSignin.signIn();
-      const googleUser = signInResult?.data?.user || signInResult?.user;
-      if (googleUser && googleUser.email) {
+      console.log('[Google Auth] Native signInResult received:', JSON.stringify(signInResult));
+
+      const resData = (signInResult as any)?.data || signInResult;
+      const googleUser = resData?.user || resData;
+      const email = googleUser?.email || resData?.email;
+      const fullName = googleUser?.name || googleUser?.givenName || resData?.name;
+      const avatarUrl = googleUser?.photo || resData?.photo;
+      const googleId = googleUser?.id || resData?.id || `google_${Date.now()}`;
+      const idToken = resData?.idToken || (signInResult as any)?.idToken;
+
+      if (email) {
         return {
-          email: googleUser.email,
-          fullName: googleUser.name || googleUser.givenName || 'Google Member',
-          avatarUrl: googleUser.photo,
-          googleId: googleUser.id,
-          idToken: signInResult?.data?.idToken || signInResult?.idToken,
+          email,
+          fullName: fullName || 'Google Member',
+          avatarUrl,
+          googleId,
+          idToken,
         };
       }
     }
   } catch (err: any) {
-    console.log('[Google Auth] Native GoogleSignin caught:', err?.message || err);
+    console.log('[Google Auth] Native GoogleSignin caught error:', err?.message || err);
   }
 
   // 2. Fallback to in-app Google prompt
