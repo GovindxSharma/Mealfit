@@ -2,25 +2,25 @@ import { Platform } from 'react-native';
 import { setAudioModeAsync, AudioModule } from 'expo-audio';
 
 /**
- * MealFit Calm & Aesthetic Sound Engine (SDK 54 expo-audio)
- * Peaceful, distinct, non-jarring tones for Hydration, Meals, and Workouts
+ * MealFit Minimalist & Simple Sound Engine (SDK 54 expo-audio)
+ * Ultra-simple, peaceful, minimal, and non-intrusive tones
  */
 
-// 1. Water Alert: Calm, refreshing natural water ripple
-const CALM_WATER_DROP_URI =
-  'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3';
+// 1. Water: Ultra-soft, subtle bubble tap
+const SIMPLE_WATER_URI =
+  'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3';
 
-// 2. Meal Alert: Soothing, gentle mindful harp chime
-const CALM_MEAL_CHIME_URI =
-  'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+// 2. Meal: Gentle single marimba acoustic note
+const SIMPLE_MEAL_URI =
+  'https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3';
 
-// 3. Workout Alert: Gentle Zen harmonic bell
-const CALM_WORKOUT_BELL_URI =
-  'https://assets.mixkit.co/active_storage/sfx/2866/2866-preview.mp3';
+// 3. Workout: Subtle, soft warm chime
+const SIMPLE_WORKOUT_URI =
+  'https://assets.mixkit.co/active_storage/sfx/1069/1069-preview.mp3';
 
-// 4. Reward Milestone: Soft euphoric victory harmony
-const CALM_REWARD_FANFARE_URI =
-  'https://assets.mixkit.co/active_storage/sfx/1433/1433-preview.mp3';
+// 4. Reward: Calm, gentle milestone chord
+const SIMPLE_REWARD_URI =
+  'https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3';
 
 let audioInitialized = false;
 
@@ -50,30 +50,30 @@ async function playSoundUrl(url: string) {
 
 export class SoundService {
   /**
-   * 1. Hydration: Calm, refreshing spring water ripple
+   * 1. Water: Ultra-soft, gentle bubble tap
    */
   static async playWaterDrop() {
-    await playSoundUrl(CALM_WATER_DROP_URI);
+    await playSoundUrl(SIMPLE_WATER_URI);
   }
 
   /**
-   * 2. Nutrition: Gentle, mindful harp chime
+   * 2. Nutrition: Gentle single acoustic marimba note
    */
   static async playMealLogged() {
-    await playSoundUrl(CALM_MEAL_CHIME_URI);
+    await playSoundUrl(SIMPLE_MEAL_URI);
   }
 
   /**
-   * 3. Movement: Soothing Zen harmonic bell
+   * 3. Movement: Subtle, calm warm focus chime
    */
   static async playWorkoutDing() {
-    await playSoundUrl(CALM_WORKOUT_BELL_URI);
+    await playSoundUrl(SIMPLE_WORKOUT_URI);
   }
 
   /**
-   * 4. Victory: Soft harmonic reward fanfare
+   * 4. Milestone: Soft, peaceful reward tone
    */
   static async playRewardChime() {
-    await playSoundUrl(CALM_REWARD_FANFARE_URI);
+    await playSoundUrl(SIMPLE_REWARD_URI);
   }
 }
