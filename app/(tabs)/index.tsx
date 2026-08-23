@@ -226,7 +226,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Right Header Action Buttons */}
+          {/* Right Header Action Buttons: Weather + Settings Button */}
           <View style={styles.headerActionRow}>
             {/* Weather / Location Pill */}
             <TouchableOpacity
@@ -240,29 +240,18 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Before Sign-In: Direct Sign In Action Pill */}
-            {!isLoggedIn ? (
-              <TouchableOpacity
-                onPress={() => router.push('/auth/login' as any)}
-                style={[styles.quickSignInBtn, { backgroundColor: theme.primary, borderColor: theme.primary }]}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.quickSignInText, { color: '#FFFFFF' }]}>Sign In</Text>
-              </TouchableOpacity>
-            ) : (
-              /* After Sign-In: Sleek Settings Gear */
-              <TouchableOpacity
-                onPress={() => setShowSettings(true)}
-                style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-                activeOpacity={0.7}
-              >
-                <Settings size={17} color={theme.textPrimary} />
-              </TouchableOpacity>
-            )}
+            {/* Settings Gear Button (Always in top right corner) */}
+            <TouchableOpacity
+              onPress={() => setShowSettings(true)}
+              style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+              activeOpacity={0.7}
+            >
+              <Settings size={17} color={theme.textPrimary} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* 2. Before Sign-In Compact Banner (Replaces giant card) */}
+        {/* 2. Before Sign-In Compact Banner (Below Header) */}
         {!isLoggedIn && (
           <TouchableOpacity
             onPress={() => router.push('/auth/login' as any)}
