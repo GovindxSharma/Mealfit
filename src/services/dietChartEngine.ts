@@ -521,18 +521,18 @@ export const getDietChartForUser = (
 export const getSlotTitle = (slot: MealSlotType): { en: string; hi: string; icon: string } => {
   switch (slot) {
     case 'pre_workout':
-      return { en: 'Pre-Workout Energizer', hi: 'व्यायाम से पहले', icon: '⚡' };
+      return { en: 'Pre-Workout Energizer', hi: 'व्यायाम से पहले', icon: '' };
     case 'breakfast':
-      return { en: 'High-Protein Breakfast', hi: 'नाश्ता', icon: '☀️' };
+      return { en: 'High-Protein Breakfast', hi: 'नाश्ता', icon: '' };
     case 'mid_morning':
-      return { en: 'Mid-Morning Focus Snack', hi: 'सुबह का स्नैक', icon: '🍎' };
+      return { en: 'Mid-Morning Focus Snack', hi: 'सुबह का स्नैक', icon: '' };
     case 'lunch':
-      return { en: 'Power Athletic Lunch', hi: 'दोपहर का भोजन', icon: '🍛' };
+      return { en: 'Power Athletic Lunch', hi: 'दोपहर का भोजन', icon: '' };
     case 'evening_snack':
-      return { en: 'Evening Recovery Snack', hi: 'शाम का नाश्ता', icon: '☕' };
+      return { en: 'Evening Recovery Snack', hi: 'शाम का नाश्ता', icon: '' };
     case 'dinner':
-      return { en: 'Light Restorative Dinner', hi: 'रात का खाना', icon: '🌙' };
+      return { en: 'Light Restorative Dinner', hi: 'रात का खाना', icon: '' };
     case 'bedtime':
-      return { en: 'Nocturnal Recovery Elixir', hi: 'सोने से पहले', icon: '✨' };
+      return { en: 'Nocturnal Recovery Elixir', hi: 'सोने से पहले', icon: '' };
   }
 };

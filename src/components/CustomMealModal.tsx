@@ -25,6 +25,7 @@ import {
 import {
   INDIAN_FOOD_DATABASE,
   searchIndianFoodDatabase,
+  estimateIndianFoodNutrients,
   IndianFoodItem,
 } from '../services/indianFoodDatabase';
 
@@ -48,14 +49,34 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
 
   // Custom Form State
   const [customName, setCustomName] = useState<string>('');
-  const [customCalories, setCustomCalories] = useState<string>('350');
-  const [customProtein, setCustomProtein] = useState<string>('20');
+  const [customCalories, setCustomCalories] = useState<string>('310');
+  const [customProtein, setCustomProtein] = useState<string>('12');
   const [customCarbs, setCustomCarbs] = useState<string>('40');
   const [customFat, setCustomFat] = useState<string>('10');
   const [customQuantity, setCustomQuantity] = useState<string>('1 Serving');
   const [customCost, setCustomCost] = useState<string>('25');
+  const [detectedInsight, setDetectedInsight] = useState<string>('');
+  const [hasAutoFilled, setHasAutoFilled] = useState<boolean>(false);
 
   const filteredFoods = searchIndianFoodDatabase(searchQuery);
+
+  const handleCustomNameChange = (text: string) => {
+    setCustomName(text);
+    if (text.trim().length >= 2) {
+      const est = estimateIndianFoodNutrients(text);
+      setCustomCalories(String(est.calories));
+      setCustomProtein(String(est.proteinG));
+      setCustomCarbs(String(est.carbsG));
+      setCustomFat(String(est.fatG));
+      setCustomQuantity(est.servingSize);
+      setCustomCost(String(est.costInr));
+      setDetectedInsight(`${est.name}: ${est.tip}`);
+      setHasAutoFilled(true);
+    } else {
+      setHasAutoFilled(false);
+      setDetectedInsight('');
+    }
+  };
 
   const handleAddPreset = (food: IndianFoodItem) => {
     addCustomMeal({
@@ -284,12 +305,12 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
             >
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: theme.textSecondary }]}>
-                  MEAL / DISH NAME
+                  MEAL / DISH NAME (ANY INDIAN FOOD)
                 </Text>
                 <TextInput
                   value={customName}
-                  onChangeText={setCustomName}
-                  placeholder="e.g. Maa ke hath ki Kadhi Chawal + Salad"
+                  onChangeText={handleCustomNameChange}
+                  placeholder="e.g. Sooji Halwa, Gajar Halwa, Aloo Paratha, Biryani..."
                   placeholderTextColor={theme.textMuted}
                   style={[
                     styles.formInput,
@@ -302,6 +323,29 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
                 />
               </View>
 
+              {/* AI Auto-Fill Intelligence Banner */}
+              {hasAutoFilled && detectedInsight ? (
+                <View
+                  style={[
+                    styles.aiInsightBadge,
+                    {
+                      backgroundColor: theme.primaryLight,
+                      borderColor: theme.primary,
+                    },
+                  ]}
+                >
+                  <Sparkles size={15} color={theme.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.aiInsightTitle, { color: theme.primary }]}>
+                      Auto-Calculated Indian Nutrients
+                    </Text>
+                    <Text style={[styles.aiInsightText, { color: theme.textSecondary }]}>
+                      {detectedInsight}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: theme.textSecondary }]}>
                   PORTION / SERVING SIZE
@@ -309,7 +353,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
                 <TextInput
                   value={customQuantity}
                   onChangeText={setCustomQuantity}
-                  placeholder="e.g. 1 Bowl (200g) or 2 Rotis"
+                  placeholder="e.g. 1 Bowl (150g) or 2 Rotis"
                   placeholderTextColor={theme.textMuted}
                   style={[
                     styles.formInput,
@@ -598,6 +642,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
+  },
+  aiInsightBadge: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  aiInsightTitle: {
+    fontSize: 11.5,
+    fontWeight: '800',
+  },
+  aiInsightText: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
   },
   macroInputRow: {
     flexDirection: 'row',

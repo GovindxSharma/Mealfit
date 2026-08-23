@@ -116,7 +116,7 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
       costInr: alt.costInr,
     });
     setLoggedIds((prev) => ({ ...prev, [alt.id]: true }));
-    Alert.alert('🔄 Swap Logged', `${alt.name} (+${alt.proteinG}g Protein) has been added to today's ledger!`);
+    Alert.alert('Swap Logged', `${alt.name} (+${alt.proteinG}g Protein) has been added to today's ledger.`);
   };
 
   const handleShareDietChart = async () => {
@@ -127,14 +127,14 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
             `${idx + 1}. [${getSlotTitle(m.slot).en} - ${m.recommendedTime}]\n` +
             `🥗 ${m.name} (${m.hindiName})\n` +
             `⚡ ${m.calories} kcal | P: ${m.proteinG}g | C: ${m.carbsG}g | F: ${m.fatG}g | ₹${m.costInr}\n` +
-            `💡 Why: ${m.whyWeAdviseThis}\n`
+            `Why: ${m.whyWeAdviseThis}\n`
         )
         .join('\n');
 
       const message =
-        `🇮🇳 MealFit India — My Personalized Daily Indian Diet Plan\n` +
-        `🎯 Goal: ${activeGoal.toUpperCase()} | 🥬 Diet: ${activeDiet.toUpperCase()}\n` +
-        `📊 Daily Totals: ${totals.calories} kcal | ${totals.protein.toFixed(1)}g Protein | ₹${totals.cost}/day\n\n` +
+        `MealFit India — My Personalized Daily Indian Diet Plan\n` +
+        `Goal: ${activeGoal.toUpperCase()} | Diet: ${activeDiet.toUpperCase()}\n` +
+        `Daily Totals: ${totals.calories} kcal | ${totals.protein.toFixed(1)}g Protein | ₹${totals.cost}/day\n\n` +
         mealListText +
         `\n\nPowered by ICMR & NIN Nutrition Guidelines on MealFit India!`;
 
@@ -179,10 +179,10 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
               <Text style={[styles.filterLabel, { color: theme.textMuted }]}>FITNESS TARGET</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterPillRow}>
                 {[
-                  { key: 'fat_loss', label: '🔥 Fat Loss Deficit' },
-                  { key: 'muscle_gain', label: '💪 Muscle Hypertrophy' },
-                  { key: 'recomp', label: '⚖️ Body Recomp' },
-                  { key: 'low_gi_pcod', label: '🩺 Low GI / PCOD Health' },
+                  { key: 'fat_loss', label: 'Fat Loss Deficit' },
+                  { key: 'muscle_gain', label: 'Muscle Hypertrophy' },
+                  { key: 'recomp', label: 'Body Recomp' },
+                  { key: 'low_gi_pcod', label: 'Low GI / PCOD Health' },
                 ].map((g) => {
                   const isSel = activeGoal === g.key;
                   return (
@@ -217,10 +217,10 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
               <Text style={[styles.filterLabel, { color: theme.textMuted }]}>DIETARY PREFERENCE</Text>
               <View style={styles.dietPillRow}>
                 {[
-                  { key: 'veg', label: '🥬 100% Pure Veg' },
-                  { key: 'jain', label: '🌱 Jain Friendly' },
-                  { key: 'eggetarian', label: '🥚 Eggetarian' },
-                  { key: 'non_veg', label: '🍗 Non-Veg' },
+                  { key: 'veg', label: 'Pure Veg' },
+                  { key: 'jain', label: 'Jain Friendly' },
+                  { key: 'eggetarian', label: 'Eggetarian' },
+                  { key: 'non_veg', label: 'Non-Veg' },
                 ].map((d) => {
                   const isSel = activeDiet === d.key;
                   return (
@@ -367,12 +367,12 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
                       <View style={styles.macroPillRow}>
                         <View style={[styles.macroPill, { backgroundColor: theme.primaryLight }]}>
                           <Text style={[styles.macroPillText, { color: theme.primary }]}>
-                            🔥 {meal.calories} kcal
+                            {meal.calories} kcal
                           </Text>
                         </View>
                         <View style={[styles.macroPill, { backgroundColor: theme.secondaryLight }]}>
                           <Text style={[styles.macroPillText, { color: theme.primary }]}>
-                            💪 {meal.proteinG}g Pro
+                            {meal.proteinG}g Pro
                           </Text>
                         </View>
                         <View style={[styles.macroPill, { backgroundColor: theme.backgroundSecondary }]}>
@@ -382,7 +382,7 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
                         </View>
                         <View style={[styles.macroPill, { backgroundColor: theme.backgroundSecondary }]}>
                           <Text style={[styles.macroPillText, { color: theme.textSecondary }]}>
-                            ⏱️ {meal.prepTimeMin}m
+                            {meal.prepTimeMin}m prep
                           </Text>
                         </View>
                       </View>
@@ -507,10 +507,10 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
                                 </Text>
                                 <View style={styles.altMacroRow}>
                                   <Text style={[styles.altMacroItem, { color: theme.textMuted }]}>
-                                    🔥 {alt.calories} kcal
+                                    {alt.calories} kcal
                                   </Text>
                                   <Text style={[styles.altMacroItem, { color: theme.primary, fontWeight: '700' }]}>
-                                    💪 {alt.proteinG}g Pro
+                                    {alt.proteinG}g Pro
                                   </Text>
                                   <Text style={[styles.altMacroItem, { color: theme.textMuted }]}>
                                     ₹{alt.costInr}

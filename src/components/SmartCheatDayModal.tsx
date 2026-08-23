@@ -27,6 +27,7 @@ import {
   Footprints,
   HeartPulse,
   Scale,
+  Utensils,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -47,11 +48,9 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
   const [selectedCheatMeal, setSelectedCheatMeal] = useState<{
     name: string;
     calories: number;
-    icon: string;
   }>({
     name: 'Amritsari Chole Bhature (2 Pcs)',
     calories: 780,
-    icon: '🥟',
   });
   const [daysAhead, setDaysAhead] = useState<number>(3);
   const [useCardioOffset, setUseCardioOffset] = useState<boolean>(true);
@@ -84,16 +83,16 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
     const weeklyRate = weightDiff / Math.max(1, targetWeeks);
 
     let safetyStatus: 'safe' | 'moderate' | 'extreme' = 'safe';
-    let safetyLabel = '🟢 Scientifically Ideal & Safe (Zero Muscle Loss)';
+    let safetyLabel = 'Scientifically Ideal & Safe (Zero Muscle Loss)';
     let safetyDesc = 'ICMR & NIN clinical standard: preserves basal metabolic rate and skin elasticity.';
 
     if (weeklyRate > 0.65 && weeklyRate <= 0.95) {
       safetyStatus = 'moderate';
-      safetyLabel = '🟡 Aggressive Athletic Deficit';
+      safetyLabel = 'Aggressive Athletic Deficit';
       safetyDesc = 'Requires high protein intake (>130g/day) to prevent lean skeletal muscle loss.';
     } else if (weeklyRate > 0.95) {
       safetyStatus = 'extreme';
-      safetyLabel = '🔴 High Metabolic Adaptation Risk';
+      safetyLabel = 'High Metabolic Adaptation Risk';
       safetyDesc = 'Too fast; may cause thyroid T3 downregulation and rebound hunger. Extend timeline by 3-4 weeks.';
     }
 
@@ -115,7 +114,7 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
       estimatedWeeksToGoal: targetWeeks,
     });
     Alert.alert(
-      '🎯 Goal & Timeline Updated',
+      'Goal & Timeline Updated',
       `Your targets have been recalibrated: ${targetWeight} kg in ${targetWeeks} weeks (${goalAnalysis.weeklyRate} kg/week).`
     );
     onClose();
@@ -123,7 +122,7 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
 
   const handleActivateCheatProtocol = () => {
     Alert.alert(
-      '🎉 Cheat Protocol Activated!',
+      'Cheat Protocol Activated',
       `For the next ${daysAhead} days, bank ~${bankingStrategy.dailyKcalDeficit} kcal/day.\nEnjoy your ${selectedCheatMeal.name} guilt-free with zero fat gain!`
     );
     onClose();
@@ -174,11 +173,11 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
               {/* Cheat Meal Presets */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cheatScroll}>
                 {[
-                  { name: 'Chole Bhature (2 Pcs)', calories: 780, icon: '🥟' },
-                  { name: 'Wedding Dum Biryani', calories: 720, icon: '🍛' },
-                  { name: 'Cheese Pizza (3 Slices)', calories: 820, icon: '🍕' },
-                  { name: 'Pav Bhaji (2 Pav)', calories: 540, icon: '🥖' },
-                  { name: 'Gulab Jamun (3 Pcs)', calories: 480, icon: '🍯' },
+                  { name: 'Chole Bhature (2 Pcs)', calories: 780 },
+                  { name: 'Wedding Dum Biryani', calories: 720 },
+                  { name: 'Cheese Pizza (3 Slices)', calories: 820 },
+                  { name: 'Pav Bhaji (2 Pav)', calories: 540 },
+                  { name: 'Gulab Jamun (3 Pcs)', calories: 480 },
                 ].map((item, idx) => {
                   const isSel = selectedCheatMeal.name === item.name;
                   return (
@@ -194,7 +193,7 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
                       ]}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.cheatIcon}>{item.icon}</Text>
+                      <Utensils size={16} color={isSel ? theme.primary : theme.textSecondary} />
                       <Text
                         style={[
                           styles.cheatName,
@@ -293,10 +292,10 @@ export const SmartCheatDayModal: React.FC<SmartCheatDayModalProps> = ({
               {/* Goal Type Selector */}
               <View style={styles.goalPillRow}>
                 {[
-                  { key: 'fat_loss', label: '🔥 Fat Loss' },
-                  { key: 'muscle_gain', label: '💪 Muscle Gain' },
-                  { key: 'recomp', label: '⚖️ Recomp' },
-                  { key: 'low_gi_pcod', label: '🩺 Low GI / PCOD' },
+                  { key: 'fat_loss', label: 'Fat Loss' },
+                  { key: 'muscle_gain', label: 'Muscle Gain' },
+                  { key: 'recomp', label: 'Body Recomp' },
+                  { key: 'low_gi_pcod', label: 'Low GI / PCOD' },
                 ].map((g) => (
                   <TouchableOpacity
                     key={g.key}

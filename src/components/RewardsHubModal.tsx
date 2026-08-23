@@ -55,11 +55,11 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
 
   const handleUnlockPerk = (perkId: string, title: string, cost: number) => {
     if (unlockedPerks[perkId]) {
-      Alert.alert('Unlocked', `${title} is already active on your MealFit account!`);
+      Alert.alert('Unlocked', `${title} is already active on your MealFit account.`);
       return;
     }
     setUnlockedPerks((prev) => ({ ...prev, [perkId]: true }));
-    Alert.alert('🎉 Perk Unlocked!', `You have unlocked "${title}"!`);
+    Alert.alert('Perk Unlocked', `You have unlocked "${title}".`);
   };
 
   return (
@@ -105,7 +105,7 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
               <View style={styles.heroTopRow}>
                 <View>
                   <Text style={styles.heroKicker}>AVAILABLE REWARD BALANCE</Text>
-                  <Text style={styles.heroCoinBig}>🪙 {fitCoins} FitCoins</Text>
+                  <Text style={styles.heroCoinBig}>{fitCoins} FitCoins</Text>
                 </View>
                 <View style={styles.streakBadge}>
                   <Flame size={16} color="#F59E0B" />
@@ -115,8 +115,8 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
 
               <View style={styles.tierProgressRow}>
                 <View style={styles.tierTextBox}>
-                  <Text style={styles.tierTitle}>🥈 Silver Indian Warrior Tier</Text>
-                  <Text style={styles.tierSub}>120 FitCoins to 🥇 Gold Champion</Text>
+                  <Text style={styles.tierTitle}>Silver Indian Warrior Tier</Text>
+                  <Text style={styles.tierSub}>120 FitCoins to Gold Champion</Text>
                 </View>
                 <View style={styles.progressBarBg}>
                   <View style={[styles.progressBarFill, { width: '70%' }]} />
@@ -191,7 +191,7 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
                         {quest.title}
                       </Text>
                       <Text style={[styles.questReward, { color: theme.amber }]}>
-                        🪙 {quest.reward}
+                        {quest.reward}
                       </Text>
                     </View>
 
@@ -284,7 +284,7 @@ export const RewardsHubModal: React.FC<RewardsHubModalProps> = ({
                             { color: isUnlocked ? theme.primary : '#FFFFFF' },
                           ]}
                         >
-                          {isUnlocked ? 'Open Perk' : `Unlock (🪙 ${perk.cost})`}
+                          {isUnlocked ? 'Open Perk' : `Unlock (${perk.cost} Coins)`}
                         </Text>
                       </TouchableOpacity>
                     </View>

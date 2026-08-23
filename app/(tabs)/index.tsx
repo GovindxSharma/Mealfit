@@ -474,7 +474,7 @@ export default function HomeScreen() {
             <View style={styles.actionTextBox}>
               <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>FitCoins & Streak Rewards</Text>
               <Text style={[styles.actionSub, { color: theme.textSecondary }]}>
-                🪙 380 FitCoins • 5-Day Indian Warrior Streak
+                380 FitCoins • 5-Day Indian Warrior Streak
               </Text>
             </View>
             <View style={styles.actionArrowCircle}>

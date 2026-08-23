@@ -68,7 +68,7 @@ export default function WorkoutScreen() {
       }, 1000);
     } else if (timerSeconds === 0 && isTimerRunning) {
       setIsTimerRunning(false);
-      Alert.alert('⏱️ Rest Complete!', 'Time for your next set. Push hard and maintain proper form!');
+      Alert.alert('Rest Complete', 'Time for your next set. Push hard and maintain proper form!');
     }
     return () => clearInterval(interval);
   }, [isTimerRunning, timerSeconds]);
@@ -291,11 +291,11 @@ export default function WorkoutScreen() {
         {/* 4-Phase Navigation Tabs */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           {[
-            { id: 'all', label: '⚡ All Phases' },
-            { id: 'warmup', label: '🤸 1. Warmup (5m)' },
-            { id: 'cardio', label: '🏃 2. Running (5m)' },
-            { id: 'strength', label: '🏋️ 3. Strength' },
-            { id: 'cooldown', label: '🧘 4. Cooldown (5m)' },
+            { id: 'all', label: 'All Phases' },
+            { id: 'warmup', label: '1. Warmup (5m)' },
+            { id: 'cardio', label: '2. Running (5m)' },
+            { id: 'strength', label: '3. Strength' },
+            { id: 'cooldown', label: '4. Cooldown (5m)' },
           ].map((tab) => (
             <TouchableOpacity
               key={tab.id}
@@ -338,7 +338,7 @@ export default function WorkoutScreen() {
             <View style={styles.summaryCol}>
               <Text style={[styles.summaryLabel, { color: theme.textMuted }]}>EST. CALORIES BURNED</Text>
               <Text style={[styles.summaryValue, { color: theme.accent }]}>
-                🔥 {totalBurnEstimated} <Text style={{ fontSize: 13, color: theme.textSecondary }}>kcal</Text>
+                {totalBurnEstimated} <Text style={{ fontSize: 13, color: theme.textSecondary }}>kcal</Text>
               </Text>
             </View>
           </View>
@@ -440,11 +440,11 @@ export default function WorkoutScreen() {
         {/* Phase Header Banner */}
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-            {selectedPhase === 'all' && '⚡ Today\'s Full 4-Phase Routine'}
-            {selectedPhase === 'warmup' && '🤸 Phase 1: Joint Mobility & Warmup'}
-            {selectedPhase === 'cardio' && '🏃 Phase 2: Running & Cardio Ignition'}
-            {selectedPhase === 'strength' && '🏋️ Phase 3: Main Strength Routine'}
-            {selectedPhase === 'cooldown' && '🧘 Phase 4: Cooldown & Deep Stretches'}
+            {selectedPhase === 'all' && 'Today\'s Full 4-Phase Routine'}
+            {selectedPhase === 'warmup' && 'Phase 1: Joint Mobility & Warmup'}
+            {selectedPhase === 'cardio' && 'Phase 2: Running & Cardio Ignition'}
+            {selectedPhase === 'strength' && 'Phase 3: Main Strength Routine'}
+            {selectedPhase === 'cooldown' && 'Phase 4: Cooldown & Deep Stretches'}
           </Text>
           <Text style={[styles.sectionCount, { color: theme.textSecondary }]}>
             {filteredExercises.length} drills
@@ -490,7 +490,7 @@ export default function WorkoutScreen() {
                   <Text style={[styles.phaseBadgeText, { color: badge.text }]}>{badge.label}</Text>
                 </View>
                 <Text style={[styles.muscleTag, { color: theme.textSecondary }]}>
-                  🎯 {exercise.muscle}
+                  {exercise.muscle}
                 </Text>
               </View>
 
@@ -499,7 +499,7 @@ export default function WorkoutScreen() {
                 {exercise.name}
               </Text>
               <Text style={[styles.exerciseHindi, { color: theme.primary }]}>
-                💡 {exercise.hindiCue}
+                {exercise.hindiCue}
               </Text>
 
               {/* Specs Grid: Sets, Reps, Tempo */}

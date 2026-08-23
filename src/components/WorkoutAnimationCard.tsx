@@ -181,8 +181,8 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
             <Text style={[styles.tempoPhaseText, { color: theme.textPrimary }]}>
               {isActive
                 ? tempoPhase === 'eccentric'
-                  ? `⬇️ Lower Slowly: ${tempoSeconds}s`
-                  : '⬆️ Explode Up!'
+                  ? `Lower Slowly: ${tempoSeconds}s`
+                  : 'Explode Up!'
                 : 'Controlled 3s Tempo • Hypertrophy Focus'}
             </Text>
           )}
