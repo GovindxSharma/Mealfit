@@ -2,25 +2,15 @@ import { Platform } from 'react-native';
 import { setAudioModeAsync, AudioModule } from 'expo-audio';
 
 /**
- * MealFit Minimalist & Simple Sound Engine (SDK 54 expo-audio)
- * Ultra-simple, peaceful, minimal, and non-intrusive tones
+ * MealFit Local Audio Engine (SDK 54 expo-audio)
+ * 100% Offline, Zero-Latency local WAV assets (No external network, No 403 errors)
  */
 
-// 1. Water: Ultra-soft, subtle bubble tap
-const SIMPLE_WATER_URI =
-  'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3';
-
-// 2. Meal: Gentle single marimba acoustic note
-const SIMPLE_MEAL_URI =
-  'https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3';
-
-// 3. Workout: Subtle, soft warm chime
-const SIMPLE_WORKOUT_URI =
-  'https://assets.mixkit.co/active_storage/sfx/1069/1069-preview.mp3';
-
-// 4. Reward: Calm, gentle milestone chord
-const SIMPLE_REWARD_URI =
-  'https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3';
+// Local static sound assets bundled directly in the app
+const WATER_ASSET = require('../../assets/sounds/water.wav');
+const MEAL_ASSET = require('../../assets/sounds/meal.wav');
+const WORKOUT_ASSET = require('../../assets/sounds/workout.wav');
+const REWARD_ASSET = require('../../assets/sounds/reward.wav');
 
 let audioInitialized = false;
 
@@ -35,12 +25,12 @@ async function initAudio() {
   } catch (_) {}
 }
 
-async function playSoundUrl(url: string) {
+async function playLocalSound(assetSource: any) {
   if (Platform.OS === 'web') return;
   try {
     await initAudio();
     if (AudioModule && AudioModule.AudioPlayer) {
-      const player = new AudioModule.AudioPlayer({ uri: url } as any, 500, false);
+      const player = new AudioModule.AudioPlayer(assetSource, 500, false);
       player.play();
     }
   } catch (_) {
@@ -50,30 +40,30 @@ async function playSoundUrl(url: string) {
 
 export class SoundService {
   /**
-   * 1. Water: Ultra-soft, gentle bubble tap
+   * 1. Water: Calm, gentle local water drop (0ms offline, 100% reliable)
    */
   static async playWaterDrop() {
-    await playSoundUrl(SIMPLE_WATER_URI);
+    await playLocalSound(WATER_ASSET);
   }
 
   /**
-   * 2. Nutrition: Gentle single acoustic marimba note
+   * 2. Nutrition: Gentle warm marimba acoustic note
    */
   static async playMealLogged() {
-    await playSoundUrl(SIMPLE_MEAL_URI);
+    await playLocalSound(MEAL_ASSET);
   }
 
   /**
-   * 3. Movement: Subtle, calm warm focus chime
+   * 3. Movement: Soft calm workout focus tone
    */
   static async playWorkoutDing() {
-    await playSoundUrl(SIMPLE_WORKOUT_URI);
+    await playLocalSound(WORKOUT_ASSET);
   }
 
   /**
-   * 4. Milestone: Soft, peaceful reward tone
+   * 4. Milestone: Calm harmonic reward chime
    */
   static async playRewardChime() {
-    await playSoundUrl(SIMPLE_REWARD_URI);
+    await playLocalSound(REWARD_ASSET);
   }
 }
