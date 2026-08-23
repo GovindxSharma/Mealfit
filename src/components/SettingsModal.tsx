@@ -14,8 +14,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, DietaryType, EquipmentType } from '../context/AuthContext';
 import { NotificationService } from '../services/notificationService';
-import { promptGoogleSignIn, isNativeGooglePlayServicesAvailable } from '../services/googleAuth';
-import { GoogleQuickAuthModal } from './GoogleQuickAuthModal';
+import { promptGoogleSignIn } from '../services/googleAuth';
 import { useRouter } from 'expo-router';
 import {
   X,
@@ -69,7 +68,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [workoutNotif, setWorkoutNotif] = useState(user.notifications.workouts);
   const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
   const [googleLoading, setGoogleLoading] = useState<boolean>(false);
-  const [showGoogleQuickModal, setShowGoogleQuickModal] = useState<boolean>(false);
 
   useEffect(() => {
     setName(user.fullName);
@@ -89,13 +87,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const googleUser = await promptGoogleSignIn();
       await loginWithGoogle(googleUser);
     } catch (err: any) {
-      if (!isNativeGooglePlayServicesAvailable()) {
-        setShowGoogleQuickModal(true);
-      } else {
-        const msg = err?.message || String(err);
-        if (!msg.includes('cancelled') && !msg.includes('12501')) {
-          Alert.alert('Google Sign-In', msg);
-        }
+      const msg = err?.message || String(err);
+      if (!msg.includes('cancelled') && !msg.includes('12501') && !msg.includes('dismiss')) {
+        Alert.alert('Google Sign-In', msg);
       }
     } finally {
       setGoogleLoading(false);
@@ -550,12 +544,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <SecurityVaultModal
         visible={showSecurityModal}
         onClose={() => setShowSecurityModal(false)}
-      />
-      <GoogleQuickAuthModal
-        visible={showGoogleQuickModal}
-        onClose={() => setShowGoogleQuickModal(false)}
-        onSuccess={() => setShowGoogleQuickModal(false)}
-        initialEmail={email}
       />
     </Modal>
   );

@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   Modal,
   StyleSheet,
   TouchableOpacity,
-  Platform,
   Alert,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { promptGoogleSignIn, isNativeGooglePlayServicesAvailable } from '../services/googleAuth';
-import { GoogleQuickAuthModal } from './GoogleQuickAuthModal';
+import { promptGoogleSignIn } from '../services/googleAuth';
 import { useRouter } from 'expo-router';
-import { Lock, Sparkles, X, ArrowRight, ShieldCheck } from 'lucide-react-native';
+import { Lock, ArrowRight, ShieldCheck, X } from 'lucide-react-native';
 
 interface AuthRequiredModalProps {
   visible: boolean;
@@ -26,12 +24,11 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
   visible,
   onClose,
   title = 'Account Required',
-  subtitle = 'Sign in to sync your personalized Indian diet, macro logs & fitness streaks.',
+  subtitle = 'Sign in with Google to sync your personalized Indian diet, macro logs & fitness streaks.',
 }) => {
   const { theme } = useTheme();
   const { loginWithGoogle } = useAuth();
   const router = useRouter();
-  const [showGoogleQuickModal, setShowGoogleQuickModal] = useState<boolean>(false);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -39,34 +36,29 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
       await loginWithGoogle(googleUser);
       onClose();
     } catch (err: any) {
-      if (!isNativeGooglePlayServicesAvailable()) {
-        setShowGoogleQuickModal(true);
-      } else {
-        const msg = err?.message || String(err);
-        if (!msg.includes('cancelled') && !msg.includes('12501')) {
-          Alert.alert('Google Sign-In', msg);
-        }
+      const msg = err?.message || String(err);
+      if (!msg.includes('cancelled') && !msg.includes('12501') && !msg.includes('dismiss')) {
+        Alert.alert('Google Sign-In', msg);
       }
     }
   };
 
-  const handleEmailSignIn = () => {
+  const handleGoToAuth = () => {
     onClose();
     router.push('/auth/login' as any);
   };
 
   return (
-    <>
-      <Modal visible={visible && !showGoogleQuickModal} animationType="fade" transparent>
-        <View style={styles.overlay}>
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: theme.card, borderColor: theme.cardBorder },
-            ]}
-          >
-            {/* Close button */}
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+    <Modal visible={visible} animationType="fade" transparent>
+      <View style={styles.overlay}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.card, borderColor: theme.cardBorder },
+          ]}
+        >
+          {/* Close button */}
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <X size={18} color={theme.textMuted} />
           </TouchableOpacity>
 
@@ -84,7 +76,7 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
             onPress={handleGoogleSignIn}
             style={[
               styles.googleBtn,
-              { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder },
+              { backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF', borderColor: theme.cardBorder },
             ]}
             activeOpacity={0.85}
           >
@@ -94,43 +86,19 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
             <Text style={[styles.googleBtnText, { color: theme.textPrimary }]}>
               Continue with Google
             </Text>
-          </TouchableOpacity>
-
-          {/* Email Login Button */}
-          <TouchableOpacity
-            onPress={handleEmailSignIn}
-            style={[styles.primaryBtn, { backgroundColor: theme.primary }]}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.primaryBtnText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
-              Sign In with Email
-            </Text>
-            <ArrowRight size={16} color={theme.isDark ? '#000000' : '#FFFFFF'} />
+            <ArrowRight size={16} color={theme.primary} />
           </TouchableOpacity>
 
           {/* Trust note */}
           <View style={styles.trustRow}>
             <ShieldCheck size={12} color={theme.primary} />
             <Text style={[styles.trustText, { color: theme.textMuted }]}>
-              256-Bit Encrypted • Free Forever Plan
+              Official Google OAuth 2.0 • 100% Free Forever
             </Text>
           </View>
         </View>
       </View>
     </Modal>
-
-    <GoogleQuickAuthModal
-      visible={showGoogleQuickModal}
-      onClose={() => {
-        setShowGoogleQuickModal(false);
-        onClose();
-      }}
-      onSuccess={() => {
-        setShowGoogleQuickModal(false);
-        onClose();
-      }}
-    />
-  </>
   );
 };
 
@@ -144,88 +112,82 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    maxWidth: 380,
     borderRadius: 24,
     borderWidth: 1,
     padding: 24,
     alignItems: 'center',
-    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
   },
   closeBtn: {
     position: 'absolute',
     top: 16,
     right: 16,
-    padding: 4,
+    padding: 6,
   },
   iconBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     borderWidth: 1.5,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 12.5,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 19,
     textAlign: 'center',
+    marginBottom: 22,
     paddingHorizontal: 8,
   },
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     width: '100%',
-    paddingVertical: 12,
     borderRadius: 14,
-    borderWidth: 1,
-    marginTop: 6,
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   googleIconBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EA4335',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   googleG: {
-    color: '#4285F4',
-    fontSize: 13,
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '900',
   },
   googleBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    width: '100%',
-    paddingVertical: 12,
-    borderRadius: 14,
-  },
-  primaryBtnText: {
-    fontSize: 13.5,
+    fontSize: 15,
     fontWeight: '800',
+    flex: 1,
+    marginLeft: 12,
   },
   trustRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     marginTop: 4,
   },
   trustText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '600',
   },
 });

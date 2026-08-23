@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { promptGoogleSignIn, isNativeGooglePlayServicesAvailable } from '../../src/services/googleAuth';
-import { GoogleQuickAuthModal } from '../../src/components/GoogleQuickAuthModal';
+import { promptGoogleSignIn } from '../../src/services/googleAuth';
 import { useRouter } from 'expo-router';
 import {
   Flame,
@@ -34,7 +33,6 @@ export default function RegisterScreen() {
   const router = useRouter();
 
   const [googleLoading, setGoogleLoading] = useState<boolean>(false);
-  const [showGoogleQuickModal, setShowGoogleQuickModal] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleBackToApp = () => {
@@ -45,17 +43,12 @@ export default function RegisterScreen() {
     setErrorMsg(null);
     setGoogleLoading(true);
     try {
-      if (!isNativeGooglePlayServicesAvailable()) {
-        setShowGoogleQuickModal(true);
-        setGoogleLoading(false);
-        return;
-      }
       const googleUser = await promptGoogleSignIn();
       await loginWithGoogle(googleUser);
       router.replace('/(tabs)');
     } catch (err: any) {
       const msg = err?.message || String(err);
-      if (!msg.includes('cancelled') && !msg.includes('12501')) {
+      if (!msg.includes('cancelled') && !msg.includes('12501') && !msg.includes('dismiss')) {
         Alert.alert('Google Sign-In', msg);
         setErrorMsg(msg);
       }
@@ -185,14 +178,6 @@ export default function RegisterScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Google Quick Auth Modal for Expo Go */}
-      <GoogleQuickAuthModal
-        visible={showGoogleQuickModal}
-        onClose={() => setShowGoogleQuickModal(false)}
-        onSuccess={() => router.replace('/(tabs)')}
-        initialEmail="govindsharma2839@gmail.com"
-      />
     </View>
   );
 }

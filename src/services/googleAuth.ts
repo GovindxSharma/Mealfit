@@ -1,12 +1,16 @@
-import { NativeModules } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { NativeModules, Platform } from 'react-native';
 
-export const GOOGLE_ANDROID_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-  '351938721714-op178a4jbmssutp6td8ivmdgr8pdc62e.apps.googleusercontent.com';
+WebBrowser.maybeCompleteAuthSession();
 
 export const GOOGLE_WEB_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
   '351938721714-v7jmbogjvvnik6utb00ovph4hn5ee9t9.apps.googleusercontent.com';
+
+export const GOOGLE_ANDROID_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+  '351938721714-op178a4jbmssutp6td8ivmdgr8pdc62e.apps.googleusercontent.com';
 
 export interface GoogleUserProfile {
   email: string;
@@ -16,13 +20,9 @@ export interface GoogleUserProfile {
   idToken?: string;
 }
 
-export const isNativeGooglePlayServicesAvailable = (): boolean => {
-  return !!(NativeModules && NativeModules.RNGoogleSignin);
-};
-
 export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
-  // 1. In standalone APK with NativeModules.RNGoogleSignin available
-  if (isNativeGooglePlayServicesAvailable()) {
+  // 1. Standalone APK: Execute native Google Play Services if compiled in binary
+  if (NativeModules && NativeModules.RNGoogleSignin) {
     try {
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
       GoogleSignin.configure({
@@ -36,11 +36,11 @@ export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
       const dataObj = (signInResult as any)?.data || signInResult;
       const userObj = dataObj?.user || dataObj;
 
-      const email = userObj?.email || dataObj?.email || '';
+      const email = userObj?.email || dataObj?.email;
       const fullName = userObj?.name || userObj?.givenName || dataObj?.name || 'Google Member';
-      const avatarUrl = userObj?.photo || dataObj?.photo || undefined;
+      const avatarUrl = userObj?.photo || dataObj?.photo;
       const googleId = userObj?.id || dataObj?.id || `google_${Date.now()}`;
-      const idToken = dataObj?.idToken || (signInResult as any)?.idToken || undefined;
+      const idToken = dataObj?.idToken || (signInResult as any)?.idToken;
 
       if (email) {
         return {
@@ -51,11 +51,56 @@ export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
           idToken,
         };
       }
-    } catch (err: any) {
-      console.log('[Google Auth] Native GoogleSignin caught:', err?.message || err);
+    } catch (nativeErr: any) {
+      console.log('[Google Auth] Native GoogleSignin:', nativeErr?.message || nativeErr);
+      const msg = nativeErr?.message || '';
+      if (msg.includes('12501') || msg.includes('cancel')) {
+        throw new Error('Google Sign-In was cancelled');
+      }
     }
   }
 
-  // 2. In Expo Go development sandbox
-  throw new Error('Google Sign-In prompt');
+  // 2. Official Google OAuth 2.0 Flow (accounts.google.com)
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: 'mealfit',
+    preferLocalhost: true,
+  });
+
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+    GOOGLE_WEB_CLIENT_ID
+  )}&response_type=token&scope=${encodeURIComponent(
+    'openid profile email'
+  )}&redirect_uri=${encodeURIComponent(redirectUri)}&prompt=select_account`;
+
+  console.log(`[Google Auth] Opening official Google OAuth screen: ${redirectUri}`);
+
+  const authResult = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+  if (authResult.type === 'success' && authResult.url) {
+    const tokenMatch = authResult.url.match(/[#&?]access_token=([^&]+)/);
+    const accessToken = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
+
+    if (accessToken) {
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (userInfoRes.ok) {
+        const profile = await userInfoRes.json();
+        console.log('[Google Auth] Official Google Profile verified:', profile.email, profile.name);
+        return {
+          email: profile.email,
+          fullName: profile.name || profile.given_name || 'Google Member',
+          avatarUrl: profile.picture,
+          googleId: profile.sub,
+        };
+      }
+    }
+  }
+
+  if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+    throw new Error('Google Sign-In was cancelled');
+  }
+
+  throw new Error('Google authentication could not be completed.');
 };
