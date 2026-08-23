@@ -206,14 +206,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  onPress={handleLogout}
-                  style={[styles.logoutPill, { backgroundColor: theme.roseLight, borderColor: theme.rose }]}
-                  activeOpacity={0.75}
-                >
-                  <LogOut size={12} color={theme.rose} />
-                  <Text style={[styles.logoutPillText, { color: theme.rose }]}>Log Out</Text>
-                </TouchableOpacity>
+                <View style={[styles.verifiedBadge, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                  <ShieldCheck size={14} color={theme.primary} />
+                  <Text style={[styles.verifiedBadgeText, { color: theme.primary }]}>Active</Text>
+                </View>
               )}
             </View>
 
@@ -566,36 +562,61 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <TouchableOpacity
               onPress={handleSave}
               style={[styles.saveBtn, { backgroundColor: theme.primary }]}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.saveBtnText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
+              <Text style={[styles.saveBtnText, { color: '#FFFFFF' }]}>
                 Save Preferences
               </Text>
             </TouchableOpacity>
 
-            {/* Logout / Switch Account */}
-            <TouchableOpacity
-              onPress={() => {
-                if (!isLoggedIn) {
+            {/* Logout / Switch Account strictly at the bottom */}
+            {isLoggedIn ? (
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    'Sign Out Confirmation',
+                    'Are you sure you want to sign out of your MealFit account? Your local food logs will remain intact.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Sign Out',
+                        style: 'destructive',
+                        onPress: () => {
+                          onClose();
+                          handleLogout();
+                        },
+                      },
+                    ]
+                  );
+                }}
+                style={[styles.bottomLogoutBtn, { backgroundColor: theme.roseLight, borderColor: theme.rose }]}
+                activeOpacity={0.8}
+              >
+                <LogOut size={16} color={theme.rose} />
+                <Text style={[styles.bottomLogoutText, { color: theme.rose }]}>
+                  Sign Out of MealFit Account
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
                   onClose();
                   router.push('/auth/login' as any);
-                } else {
-                  handleLogout();
-                }
-              }}
-              style={[styles.logoutBtn, { borderColor: theme.cardBorder }]}
-              activeOpacity={0.7}
-            >
-              <LogOut size={15} color={!isLoggedIn ? theme.primary : theme.rose} />
-              <Text style={[styles.logoutBtnText, { color: !isLoggedIn ? theme.primary : theme.rose }]}>
-                {!isLoggedIn ? 'Sign In or Create Account' : 'Log Out of Account'}
-              </Text>
-            </TouchableOpacity>
+                }}
+                style={[styles.bottomLogoutBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+                activeOpacity={0.8}
+              >
+                <LogIn size={16} color={theme.primary} />
+                <Text style={[styles.bottomLogoutText, { color: theme.primary }]}>
+                  Sign In / Register Account
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {/* Play Store App Info Footer */}
             <View style={styles.footerInfo}>
               <Text style={[styles.footerText, { color: theme.textMuted }]}>
-                MealFit India • Version 1.0.0 (Play Store Production Edition)
+                MealFit India • Version 1.0.0 (Play Store Edition)
               </Text>
             </View>
           </ScrollView>
@@ -874,6 +895,32 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 13,
+    fontWeight: '800',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  verifiedBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  bottomLogoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  bottomLogoutText: {
+    fontSize: 12.5,
     fontWeight: '800',
   },
   logoutBtn: {

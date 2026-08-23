@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { LocationService } from '../services/locationService';
 import {
   MapPin,
   X,
@@ -21,6 +22,8 @@ import {
   ShieldAlert,
   Check,
   Zap,
+  Navigation,
+  Compass,
 } from 'lucide-react-native';
 
 interface LocationModalProps {
@@ -55,6 +58,8 @@ export const LocationModal: React.FC<LocationModalProps> = ({
   const { user, updateUserProfile } = useAuth();
   const [cityInput, setCityInput] = useState<string>(user.city || '');
   const [loading, setLoading] = useState<boolean>(false);
+  const [gpsLoading, setGpsLoading] = useState<boolean>(false);
+  const [detectedAddress, setDetectedAddress] = useState<string>('');
 
   const handleApply = (selectedCityName: string) => {
     const cleanCity = selectedCityName.trim();
@@ -64,6 +69,20 @@ export const LocationModal: React.FC<LocationModalProps> = ({
     onSelectCity(cleanCity);
     setLoading(false);
     onClose();
+  };
+
+  const handleDetectGPS = async () => {
+    setGpsLoading(true);
+    try {
+      const loc = await LocationService.getCurrentLocation();
+      setCityInput(loc.city);
+      setDetectedAddress(loc.formattedAddress);
+      updateUserProfile({ city: loc.city });
+      onSelectCity(loc.city);
+      setGpsLoading(false);
+    } catch (err: any) {
+      setGpsLoading(false);
+    }
   };
 
   return (
@@ -83,7 +102,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
               </View>
               <View>
                 <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-                  Live Weather & Location
+                  Live Weather & Real-Time GPS
                 </Text>
                 <Text style={[styles.headerSub, { color: theme.textSecondary }]}>
                   Dynamic AQI & Heat Hydration Scaling
@@ -96,6 +115,41 @@ export const LocationModal: React.FC<LocationModalProps> = ({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* GPS Auto-Detect Button */}
+            <TouchableOpacity
+              onPress={handleDetectGPS}
+              disabled={gpsLoading}
+              style={[
+                styles.gpsDetectBtn,
+                {
+                  backgroundColor: theme.primary,
+                  shadowColor: theme.primary,
+                },
+              ]}
+              activeOpacity={0.85}
+            >
+              {gpsLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Navigation size={16} color="#FFFFFF" />
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gpsDetectBtnTitle}>
+                  {gpsLoading ? 'Acquiring Satellite GPS...' : 'Detect Real-Time Location (GPS)'}
+                </Text>
+                {detectedAddress ? (
+                  <Text style={styles.gpsDetectedSub} numberOfLines={1}>
+                    Found: {detectedAddress}
+                  </Text>
+                ) : (
+                  <Text style={styles.gpsDetectBtnSub}>
+                    Auto-sync local weather, humidity & regional Kirana prices
+                  </Text>
+                )}
+              </View>
+              <Compass size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+
             {/* Current Weather Card */}
             {currentWeather && (
               <View
@@ -298,6 +352,33 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 18,
     paddingBottom: 36,
+  },
+  gpsDetectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 16,
+    gap: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  gpsDetectBtnTitle: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  gpsDetectBtnSub: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 10.5,
+    marginTop: 2,
+  },
+  gpsDetectedSub: {
+    color: '#FEF08A',
+    fontSize: 10.5,
+    fontWeight: '800',
+    marginTop: 2,
   },
   weatherOverviewCard: {
     borderRadius: 16,
