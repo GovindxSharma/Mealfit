@@ -251,6 +251,61 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.foodListContent}
               >
+                {/* Instant 1-Tap Auto-Calculated Dish Card */}
+                {searchQuery.trim().length >= 2 ? (() => {
+                  const est = estimateIndianFoodNutrients(searchQuery);
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        addCustomMeal({
+                          name: est.name,
+                          calories: est.calories,
+                          proteinG: est.proteinG,
+                          carbsG: est.carbsG,
+                          fatG: est.fatG,
+                          slot: selectedSlot,
+                          quantity: est.servingSize,
+                          costInr: est.costInr,
+                          date: selectedHistoryDate,
+                        });
+                        onClose();
+                      }}
+                      style={[
+                        styles.instantLiveLogCard,
+                        {
+                          backgroundColor: theme.primaryLight,
+                          borderColor: theme.primary,
+                        },
+                      ]}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.instantLiveLeft}>
+                        <Sparkles size={18} color={theme.primary} />
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={[styles.instantLiveTitle, { color: theme.primary }]}>
+                              1-Tap Log "{est.name}"
+                            </Text>
+                            <View style={[styles.autoDetectedBadge, { backgroundColor: theme.primary }]}>
+                              <Text style={styles.autoDetectedText}>AUTO-CALCULATED</Text>
+                            </View>
+                          </View>
+                          <Text style={[styles.instantLiveSub, { color: theme.textSecondary }]}>
+                            {est.calories} kcal • {est.proteinG}g Protein • {est.carbsG}g Carbs • {est.servingSize}
+                          </Text>
+                          <Text style={[styles.instantLiveTip, { color: theme.textMuted }]}>
+                            {est.tip}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={[styles.instantLiveBtn, { backgroundColor: theme.primary }]}>
+                        <Plus size={14} color="#FFFFFF" />
+                        <Text style={styles.instantLiveBtnText}>Log Now</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })() : null}
+
                 {filteredFoods.map((food, idx) => (
                   <TouchableOpacity
                     key={idx}
@@ -578,6 +633,58 @@ const styles = StyleSheet.create({
   foodListContent: {
     gap: 8,
     paddingBottom: 40,
+  },
+  instantLiveLogCard: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 4,
+  },
+  instantLiveLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    flex: 1,
+  },
+  instantLiveTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  autoDetectedBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  autoDetectedText: {
+    color: '#FFFFFF',
+    fontSize: 8.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  instantLiveSub: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  instantLiveTip: {
+    fontSize: 10,
+    marginTop: 1,
+  },
+  instantLiveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  instantLiveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '800',
   },
   foodCard: {
     flexDirection: 'row',
