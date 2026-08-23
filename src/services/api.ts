@@ -36,14 +36,14 @@ export const getApiBaseUrl = (): string => {
     return customApiHost.startsWith('http') ? customApiHost : `https://${customApiHost}/api`;
   }
 
-  // 2. Explicit Environment Variable (passed via EAS build, .env, or CLI)
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-
-  // 3. In local development / Expo Go, connect directly to local dev backend
+  // 2. In local development / Expo Go, connect directly to local dev backend
   if (__DEV__) {
     return getLocalDevApiUrl();
+  }
+
+  // 3. Explicit Environment Variable (passed via EAS build, .env, or CLI)
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
   }
 
   // 4. Default to the Live Render Backend URL across standalone APK builds
