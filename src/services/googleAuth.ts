@@ -58,11 +58,14 @@ export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
       if (msg.includes('12501') || msg.includes('cancel')) {
         throw new Error('Google Sign-In was cancelled');
       }
+      throw nativeErr;
     }
   }
 
-  // 2. Official Google OAuth 2.0 Flow (accounts.google.com for Expo Go)
-  const redirectUri = 'https://auth.expo.io/@govindxsharma/mealfit';
+  // 2. Development / Browser Flow
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: 'mealfit',
+  });
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
     GOOGLE_WEB_CLIENT_ID
