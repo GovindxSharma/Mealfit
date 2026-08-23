@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Alert,
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, DietaryType } from '../../src/context/AuthContext';
@@ -98,10 +99,10 @@ export default function RegisterScreen() {
       await loginWithGoogle(googleUser);
       router.replace('/(tabs)');
     } catch (err: any) {
-      if (Platform.OS !== 'web') {
-        setShowGoogleQuickModal(true);
-      } else if (err.message && !err.message.includes('cancelled')) {
-        setErrorMsg(err.message);
+      const msg = err?.message || String(err);
+      if (!msg.includes('cancelled') && !msg.includes('12501')) {
+        Alert.alert('Google Sign-In', msg);
+        setErrorMsg(msg);
       }
     } finally {
       setLoading(false);

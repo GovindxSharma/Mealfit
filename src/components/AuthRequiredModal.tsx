@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  Alert,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -38,8 +39,9 @@ export const AuthRequiredModal: React.FC<AuthRequiredModalProps> = ({
       await loginWithGoogle(googleUser);
       onClose();
     } catch (err: any) {
-      if (Platform.OS !== 'web') {
-        setShowGoogleQuickModal(true);
+      const msg = err?.message || String(err);
+      if (!msg.includes('cancelled') && !msg.includes('12501')) {
+        Alert.alert('Google Sign-In', msg);
       }
     }
   };

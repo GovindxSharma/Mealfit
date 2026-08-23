@@ -89,8 +89,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const googleUser = await promptGoogleSignIn();
       await loginWithGoogle(googleUser);
     } catch (err: any) {
-      if (Platform.OS !== 'web') {
-        setShowGoogleQuickModal(true);
+      const msg = err?.message || String(err);
+      if (!msg.includes('cancelled') && !msg.includes('12501')) {
+        Alert.alert('Google Sign-In', msg);
       }
     } finally {
       setGoogleLoading(false);
