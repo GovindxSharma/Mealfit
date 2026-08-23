@@ -23,6 +23,7 @@ import { CustomMealModal } from '../../src/components/CustomMealModal';
 import { LocationModal } from '../../src/components/LocationModal';
 import { SecurityVaultModal } from '../../src/components/SecurityVaultModal';
 import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
+import { MasterDietChartModal } from '../../src/components/MasterDietChartModal';
 import { NotificationService } from '../../src/services/notificationService';
 import { useRouter } from 'expo-router';
 import {
@@ -79,6 +80,7 @@ export default function HomeScreen() {
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
   const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
   const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
+  const [showDietChartModal, setShowDietChartModal] = useState<boolean>(false);
 
   // Volumetric logger state
   const [katoriCount, setKatoriCount] = useState<number>(2);
@@ -437,6 +439,36 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Master Diet Chart & Nutrition Intelligence Banner */}
+        <TouchableOpacity
+          onPress={() => setShowDietChartModal(true)}
+          style={[
+            styles.dietChartHeroCard,
+            {
+              backgroundColor: theme.primary,
+              shadowColor: theme.primary,
+            },
+          ]}
+          activeOpacity={0.88}
+        >
+          <View style={styles.dietChartHeroLeft}>
+            <View style={styles.dietChartBadge}>
+              <Sparkles size={14} color="#FFFFFF" />
+              <Text style={styles.dietChartBadgeText}>NUTRITION SCIENCE BLUEPRINT</Text>
+            </View>
+            <Text style={styles.dietChartHeroTitle}>
+              Master Indian Diet Chart & Alternatives
+            </Text>
+            <Text style={styles.dietChartHeroDesc}>
+              Pre-Workout ➔ Bedtime • Science Rationale • 1-Tap Swaps • Kirana Budget Plans
+            </Text>
+          </View>
+          <View style={[styles.dietChartHeroRightBtn, { backgroundColor: '#FFFFFF' }]}>
+            <Text style={[styles.dietChartHeroBtnText, { color: theme.primary }]}>View Plan</Text>
+            <ChevronRight size={14} color={theme.primary} />
+          </View>
+        </TouchableOpacity>
+
         {/* 1-Tap Quick Indian Staples Bar */}
         <View style={[styles.staplesCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.staplesHeader}>
@@ -659,6 +691,10 @@ export default function HomeScreen() {
       <AuthRequiredModal
         visible={showAuthGate}
         onClose={() => setShowAuthGate(false)}
+      />
+      <MasterDietChartModal
+        visible={showDietChartModal}
+        onClose={() => setShowDietChartModal(false)}
       />
     </View>
   );
@@ -995,6 +1031,62 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dietChartHeroCard: {
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  dietChartHeroLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  dietChartBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 2,
+  },
+  dietChartBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  dietChartHeroTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  dietChartHeroDesc: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  dietChartHeroRightBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  dietChartHeroBtnText: {
+    fontSize: 11.5,
+    fontWeight: '800',
   },
   staplesCard: {
     borderRadius: 20,

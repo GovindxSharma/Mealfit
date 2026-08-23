@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, MealSlot, LoggedMealEntry } from '../../src/context/AuthContext';
 import { CustomMealModal } from '../../src/components/CustomMealModal';
+import { MasterDietChartModal } from '../../src/components/MasterDietChartModal';
 import {
   Utensils,
   Plus,
@@ -46,6 +47,7 @@ export default function MealPlanScreen() {
 
   const [activeSubTab, setActiveSubTab] = useState<'diary' | 'schedule' | 'kirana' | 'jugaad'>('diary');
   const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
+  const [showDietChartModal, setShowDietChartModal] = useState<boolean>(false);
   const [modalSlot, setModalSlot] = useState<MealSlot>('lunch');
   const [budgetPerDay, setBudgetPerDay] = useState<number>(Math.round(user.weeklyBudgetInr / 7) || 90);
   const insets = useSafeAreaInsets();
@@ -237,6 +239,35 @@ Generated via MealFit India App`;
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Glowing Master Diet Blueprint Launcher */}
+      <TouchableOpacity
+        onPress={() => setShowDietChartModal(true)}
+        style={[
+          styles.masterDietLauncher,
+          {
+            backgroundColor: theme.primaryLight,
+            borderColor: theme.primary,
+          },
+        ]}
+        activeOpacity={0.85}
+      >
+        <View style={styles.masterDietLauncherLeft}>
+          <Sparkles size={16} color={theme.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.masterDietLauncherTitle, { color: theme.primary }]}>
+              Master Indian Diet Blueprint & Swaps
+            </Text>
+            <Text style={[styles.masterDietLauncherDesc, { color: theme.textSecondary }]}>
+              Pre-Workout ➔ Bedtime • Science Rationale • 1-Tap Swaps
+            </Text>
+          </View>
+        </View>
+        <View style={[styles.masterDietLauncherBtn, { backgroundColor: theme.primary }]}>
+          <Text style={styles.masterDietLauncherBtnText}>Open</Text>
+          <ChevronRight size={12} color="#FFFFFF" />
+        </View>
+      </TouchableOpacity>
 
       {/* Main Content Areas */}
       {activeSubTab === 'diary' ? (
@@ -658,6 +689,12 @@ Generated via MealFit India App`;
         onClose={() => setShowCustomModal(false)}
         initialSlot={modalSlot}
       />
+
+      {/* Master Diet Chart Modal */}
+      <MasterDietChartModal
+        visible={showDietChartModal}
+        onClose={() => setShowDietChartModal(false)}
+      />
     </View>
   );
 }
@@ -719,6 +756,45 @@ const styles = StyleSheet.create({
   subTabText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  masterDietLauncher: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  masterDietLauncherLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  masterDietLauncherTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  masterDietLauncherDesc: {
+    fontSize: 10.5,
+    marginTop: 1,
+  },
+  masterDietLauncherBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  masterDietLauncherBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   scrollContent: {
     padding: 16,
