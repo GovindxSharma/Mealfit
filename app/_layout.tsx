@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -6,6 +6,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { DraggableLivePill } from '../src/components/DraggableLivePill';
 import { AnimatedSplashScreen } from '../src/components/AnimatedSplashScreen';
 import { NotificationBanner } from '../src/components/NotificationBanner';
+import { NotificationService } from '../src/services/notificationService';
 import { AuthProvider } from '../src/context/AuthContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { Flame } from 'lucide-react-native';
@@ -13,6 +14,11 @@ import { Flame } from 'lucide-react-native';
 function LayoutNavigation() {
   const { theme } = useTheme();
   const [splashFinished, setSplashFinished] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Schedule all 6 daytime water reminders + 3 meal reminders on launch
+    NotificationService.scheduleDailyReminders().catch(() => {});
+  }, []);
 
   return (
     <>

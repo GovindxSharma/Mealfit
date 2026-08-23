@@ -493,6 +493,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   thumbColor="#FFFFFF"
                 />
               </View>
+
+              {/* Instant Notification Tester */}
+              <View style={{ marginTop: 8, gap: 6 }}>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: theme.textMuted }}>TEST LIVE NOTIFICATION ALERTS</Text>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    onPress={() => NotificationService.sendInstantNotification('MealFit Hydration Alert', 'Drink 1 fresh glass of water (+250mL) to hit your 8-glass goal!', { type: 'hydration' })}
+                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.cyanLight, alignItems: 'center' }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: theme.cyan }}>Water Alert</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => NotificationService.sendPostMealNudge()}
+                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.primaryLight, alignItems: 'center' }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: theme.primary }}>Meal Alert</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => NotificationService.sendWorkoutReminder()}
+                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: theme.indigoLight, alignItems: 'center' }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: theme.indigo }}>Workout</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
 
             {/* 7. Security & Encryption Badge */}
