@@ -32,8 +32,8 @@ export default function LoginScreen() {
   const { loginWithEmail, login } = useAuth();
   const router = useRouter();
 
-  const [email, setEmail] = useState<string>('govindsharma2839@gmail.com');
-  const [password, setPassword] = useState<string>('govind@1184');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -66,11 +66,6 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('123456');
   };
 
   return (
@@ -194,29 +189,6 @@ export default function LoginScreen() {
                 </>
               )}
             </TouchableOpacity>
-
-            {/* Quick Demo Pickers */}
-            <View style={styles.demoSection}>
-              <Text style={[styles.demoSectionTitle, { color: theme.textMuted }]}>
-                QUICK DEMO ACCOUNTS
-              </Text>
-              <View style={styles.demoPillsRow}>
-                <TouchableOpacity
-                  onPress={() => handleQuickDemo('govindsharma2839@gmail.com')}
-                  style={[styles.demoPill, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder }]}
-                >
-                  <UserCheck size={12} color={theme.primary} />
-                  <Text style={[styles.demoPillText, { color: theme.textPrimary }]}>Govind Sharma</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleQuickDemo('member@mealfit.in')}
-                  style={[styles.demoPill, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder }]}
-                >
-                  <Sparkles size={12} color={theme.amber} />
-                  <Text style={[styles.demoPillText, { color: theme.textPrimary }]}>Demo Member</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
 
             {/* Switch to Register */}
             <View style={styles.switchRow}>
