@@ -1,24 +1,24 @@
-import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
+import { setAudioModeAsync, AudioModule } from 'expo-audio';
 
 /**
- * MealFit Unique Audio Synthesizer & Sound FX Service
- * Zero-latency embedded WAV audio buffers for 100% offline playback
+ * MealFit Audio Synthesizer & Sound FX Engine (SDK 54 expo-audio)
+ * Zero deprecation warnings, crisp native sound effects
  */
 
-// 1. Water Drop Pop Sound (Short sine wave with pitch sweep up)
+// 1. Water Drop Pop Sound
 const WATER_DROP_URI =
   'https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3';
 
-// 2. Meal Logged Success Chime (Warm organic chime)
+// 2. Meal Logged Success Chime
 const MEAL_SUCCESS_URI =
   'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3';
 
-// 3. Workout Rep Ding (Crisp athletic bell)
+// 3. Workout Rep Ding
 const WORKOUT_DING_URI =
   'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3';
 
-// 4. Reward Unlock Fanfare (Harmonic victory chime)
+// 4. Reward Unlock Fanfare
 const REWARD_CHIME_URI =
   'https://assets.mixkit.co/active_storage/sfx/1433/1433-preview.mp3';
 
@@ -27,27 +27,22 @@ let audioInitialized = false;
 async function initAudio() {
   if (audioInitialized || Platform.OS === 'web') return;
   try {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-      shouldDuckAndroid: true,
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
     });
     audioInitialized = true;
   } catch (_) {}
 }
 
-async function playSoundUrl(url: string, volume: number = 0.8) {
+async function playSoundUrl(url: string) {
+  if (Platform.OS === 'web') return;
   try {
     await initAudio();
-    const { sound } = await Audio.Sound.createAsync(
-      { uri: url },
-      { shouldPlay: true, volume }
-    );
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) {
-        sound.unloadAsync().catch(() => {});
-      }
-    });
+    if (AudioModule && AudioModule.AudioPlayer) {
+      const player = new AudioModule.AudioPlayer({ uri: url } as any, 500, false);
+      player.play();
+    }
   } catch (_) {
     // Graceful silent fallback
   }
@@ -55,30 +50,30 @@ async function playSoundUrl(url: string, volume: number = 0.8) {
 
 export class SoundService {
   /**
-   * Unique crystal water droplet pop
+   * Crystal water droplet pop
    */
   static async playWaterDrop() {
-    await playSoundUrl(WATER_DROP_URI, 0.9);
+    await playSoundUrl(WATER_DROP_URI);
   }
 
   /**
    * Warm culinary success chime for food logging
    */
   static async playMealLogged() {
-    await playSoundUrl(MEAL_SUCCESS_URI, 0.85);
+    await playSoundUrl(MEAL_SUCCESS_URI);
   }
 
   /**
-   * Crisp athletic bell for completing workout reps
+   * Crisp athletic bell for workout reps
    */
   static async playWorkoutDing() {
-    await playSoundUrl(WORKOUT_DING_URI, 0.8);
+    await playSoundUrl(WORKOUT_DING_URI);
   }
 
   /**
-   * Euphoric victory chime for streak milestones & FitCoins reward unlocks
+   * Euphoric victory chime for reward unlocks & streaks
    */
   static async playRewardChime() {
-    await playSoundUrl(REWARD_CHIME_URI, 1.0);
+    await playSoundUrl(REWARD_CHIME_URI);
   }
 }
