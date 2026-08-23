@@ -10,6 +10,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -117,13 +118,12 @@ export default function RegisterScreen() {
 
           {/* Brand Header */}
           <View style={styles.brandContainer}>
-            <View
-              style={[
-                styles.logoBadge,
-                { backgroundColor: theme.primary, shadowColor: theme.primary },
-              ]}
-            >
-              <Utensils size={30} color="#FFFFFF" strokeWidth={2.4} />
+            <View style={styles.logoBadge}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logoImage}
+                resizeMode="cover"
+              />
             </View>
             <Text style={[styles.brandTitle, { color: theme.textPrimary }]}>
               Create <Text style={{ color: theme.primary }}>MealFit</Text> Profile
@@ -368,10 +368,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
+    overflow: 'hidden',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 6,
+  },
+  logoImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
   },
   brandTitle: {
     fontSize: 24,

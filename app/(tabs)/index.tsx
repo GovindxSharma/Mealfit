@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MobileApiService } from '../../src/services/api';
@@ -217,9 +218,11 @@ export default function HomeScreen() {
               style={styles.userProfileRow}
               activeOpacity={0.8}
             >
-              <View style={[styles.avatarCircle, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
-                <Flame size={20} color={theme.primary} />
-              </View>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={[styles.avatarCircle, { borderColor: theme.primary }]}
+                resizeMode="cover"
+              />
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.greetingTitle, { color: theme.textPrimary }]} numberOfLines={1}>MealFit</Text>
                 <View style={styles.roleRow}>
