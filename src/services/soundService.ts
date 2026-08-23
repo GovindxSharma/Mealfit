@@ -53,6 +53,7 @@ async function playSoundKey(key: keyof typeof SOUND_ASSETS) {
     const uri = await resolveAssetUri(key);
     if (uri && AudioModule?.AudioPlayer) {
       const player = new AudioModule.AudioPlayer({ uri }, 500, false);
+      player.volume = 1.0;
       player.play();
     }
   } catch (_) {
