@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, LogBox } from 'react-native';
 import { DraggableLivePill } from '../src/components/DraggableLivePill';
 import { AnimatedSplashScreen } from '../src/components/AnimatedSplashScreen';
 import { NotificationBanner } from '../src/components/NotificationBanner';
@@ -10,6 +10,12 @@ import { NotificationService } from '../src/services/notificationService';
 import { AuthProvider } from '../src/context/AuthContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { Flame } from 'lucide-react-native';
+
+// Suppress benign SDK 54 deprecation logs so terminal is clean
+LogBox.ignoreLogs([
+  '[expo-av]: Expo AV has been deprecated',
+  'expo-notifications',
+]);
 
 function LayoutNavigation() {
   const { theme } = useTheme();
