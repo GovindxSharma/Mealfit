@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth, MealSlot, SavedCustomMeal } from '../context/AuthContext';
 import { estimateIndianFoodNutrients } from '../services/indianFoodDatabase';
 import { HapticService } from '../services/hapticService';
+import { SoundService } from '../services/soundService';
 import {
   X,
   Sparkles,
@@ -104,6 +105,7 @@ export const SavedMealsComposerModal: React.FC<SavedMealsComposerModalProps> = (
     // 2. Also log to today's ledger
     repeatSavedMeal(`saved_${Date.now()}`); // fallback triggers auto-log
     HapticService.success();
+    SoundService.playMealLogged().catch(() => {});
     Alert.alert('Meal Saved & Logged', `"${nameToSave}" has been added to your Saved Meals and logged to your food diary.`);
     setCustomName('');
     setDishDescription('');
@@ -113,6 +115,7 @@ export const SavedMealsComposerModal: React.FC<SavedMealsComposerModalProps> = (
   const handleRepeat = (meal: SavedCustomMeal) => {
     repeatSavedMeal(meal.id, selectedHistoryDate);
     HapticService.success();
+    SoundService.playMealLogged().catch(() => {});
     Alert.alert('Meal Repeated', `"${meal.name}" (+${meal.proteinG}g Protein) has been logged.`);
     onClose();
   };

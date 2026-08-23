@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { HapticService } from '../services/hapticService';
+import { SoundService } from '../services/soundService';
 import {
   Play,
   Pause,
@@ -106,6 +107,7 @@ export const WorkoutAnimationCard: React.FC<WorkoutAnimationCardProps> = ({
           } else {
             setRepCount((prev) => prev + 1);
             HapticService.success();
+            SoundService.playWorkoutDing().catch(() => {});
             currentStep = 3;
             setTempoPhase('eccentric');
             setTempoSeconds(3);

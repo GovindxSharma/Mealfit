@@ -28,6 +28,8 @@ import { SmartCheatDayModal } from '../../src/components/SmartCheatDayModal';
 import { RewardsHubModal } from '../../src/components/RewardsHubModal';
 import { SavedMealsComposerModal } from '../../src/components/SavedMealsComposerModal';
 import { NotificationService } from '../../src/services/notificationService';
+import { HapticService } from '../../src/services/hapticService';
+import { SoundService } from '../../src/services/soundService';
 import { useRouter } from 'expo-router';
 import {
   Flame,
@@ -705,7 +707,12 @@ export default function HomeScreen() {
             {Array.from({ length: 12 }).map((_, i) => (
               <TouchableOpacity
                 key={i}
-                onPress={() => setWaterGlasses(i < waterGlasses ? i : i + 1)}
+                onPress={() => {
+                  const newCount = i < waterGlasses ? i : i + 1;
+                  setWaterGlasses(newCount);
+                  HapticService.light();
+                  SoundService.playWaterDrop().catch(() => {});
+                }}
                 style={[
                   styles.glassButton,
                   {

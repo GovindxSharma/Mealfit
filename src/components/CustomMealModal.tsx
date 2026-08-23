@@ -12,6 +12,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, MealSlot } from '../context/AuthContext';
 import { HapticService } from '../services/hapticService';
+import { SoundService } from '../services/soundService';
 import {
   Utensils,
   X,
@@ -93,6 +94,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
       date: selectedHistoryDate,
     });
     HapticService.success();
+    SoundService.playMealLogged().catch(() => {});
     onClose();
   };
 
@@ -119,6 +121,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
       date: selectedHistoryDate,
     });
     HapticService.success();
+    SoundService.playMealLogged().catch(() => {});
 
     setCustomName('');
     onClose();

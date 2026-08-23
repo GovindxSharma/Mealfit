@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { showInAppNotification } from '../components/NotificationBanner';
 import { HapticService } from './hapticService';
+import { SoundService } from './soundService';
 
 // Detect if running inside Expo Go (which restricts native push in SDK 53/54)
 const isExpoGo =
@@ -65,6 +66,17 @@ export const NotificationService = {
     data: any = { type: 'hydration' }
   ) {
     HapticService.light();
+
+    // Trigger unique audio chime
+    if (data.type === 'hydration') {
+      SoundService.playWaterDrop().catch(() => {});
+    } else if (data.type === 'meal') {
+      SoundService.playMealLogged().catch(() => {});
+    } else if (data.type === 'workout') {
+      SoundService.playWorkoutDing().catch(() => {});
+    } else {
+      SoundService.playRewardChime().catch(() => {});
+    }
 
     // 1. Show In-App animated toast banner (100% works everywhere across Expo Go & APK)
     showInAppNotification({
