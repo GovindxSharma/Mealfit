@@ -528,9 +528,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async (googleData: { email: string; fullName?: string; avatarUrl?: string; googleId?: string }) => {
+  const loginWithGoogle = async (googleData: {
+    email: string;
+    fullName?: string;
+    avatarUrl?: string;
+    googleId?: string;
+    idToken?: string;
+  }) => {
     try {
       const res = await MobileApiService.loginWithGoogle({
+        idToken: googleData.idToken,
         email: googleData.email,
         fullName: googleData.fullName || user.fullName,
         avatarUrl: googleData.avatarUrl,

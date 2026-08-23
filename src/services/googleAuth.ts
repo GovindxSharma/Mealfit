@@ -27,6 +27,7 @@ export const promptGoogleSignIn = async (): Promise<GoogleUserProfile> => {
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
       GoogleSignin.configure({
         webClientId: GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: false,
         scopes: ['profile', 'email'],
       });
 

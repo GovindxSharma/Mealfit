@@ -156,7 +156,8 @@ export const MobileApiService = {
     }),
 
   loginWithGoogle: (data: {
-    email: string;
+    idToken?: string;
+    email?: string;
     fullName?: string;
     avatarUrl?: string;
     googleId?: string;
