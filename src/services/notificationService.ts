@@ -103,18 +103,30 @@ export const NotificationService = {
         },
       });
 
-      // Evening Dinner & Streak Check (8:30 PM)
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Dinner & Streak Saver',
-          body: 'Log your final meal of the day to keep your Indian Warrior streak alive and earn FitCoins!',
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour: 20,
-          minute: 30,
-        },
-      });
+      // ================= 6x DAYTIME WATER HYDRATION SCHEDULE =================
+      const waterSlots = [
+        { hour: 10, minute: 0, title: 'Morning Hydration Kickoff', body: 'Drink 1 full glass (250mL) of water to boost morning metabolic rate and rehydrate.' },
+        { hour: 12, minute: 0, title: 'Pre-Lunch Hydration Check', body: 'Drink 1 glass of water 30 minutes before lunch to prime digestion and prevent overeating.' },
+        { hour: 15, minute: 0, title: 'Midday Hydration Boost', body: 'Beat the 3:00 PM afternoon lethargy with 1 fresh glass of water (+250mL).' },
+        { hour: 17, minute: 30, title: 'Pre-Workout Movement Hydration', body: 'Hydrate before your evening living room workout to optimize muscular contraction.' },
+        { hour: 19, minute: 30, title: 'Evening Hydration Check', body: 'Drink 1 glass of water before dinner to support gastrointestinal motility.' },
+        { hour: 21, minute: 30, title: 'Bedtime Hydration Finish', body: 'Final small glass (150mL) of water to stay hydrated and hit your daily 8-glass goal.' },
+      ];
+
+      for (const slot of waterSlots) {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: slot.title,
+            body: slot.body,
+            data: { type: 'hydration' },
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: slot.hour,
+            minute: slot.minute,
+          },
+        });
+      }
     } catch (e) {
       // Ignored
     }
