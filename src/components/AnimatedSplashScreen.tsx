@@ -20,20 +20,28 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
   const { theme } = useTheme();
 
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeOutAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Gentle fade in
+    // 1. Gentle, soothing fade in (800ms)
     Animated.timing(opacityAnim, {
       toValue: 1,
-      duration: 600,
+      duration: 800,
       useNativeDriver: true,
     }).start();
 
-    // 1.8-second display interval followed by smooth fade-out
+    // 2. Calm, smooth loading progress bar across 2.4 seconds
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: 2400,
+      useNativeDriver: false,
+    }).start();
+
+    // 3. Calm transition to app
     const timer = setTimeout(() => {
       handleComplete();
-    }, 1800);
+    }, 2600);
 
     return () => clearTimeout(timer);
   }, []);
@@ -41,12 +49,17 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
   const handleComplete = () => {
     Animated.timing(fadeOutAnim, {
       toValue: 0,
-      duration: 400,
+      duration: 500,
       useNativeDriver: true,
     }).start(() => {
       onFinish();
     });
   };
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
 
   return (
     <Animated.View
@@ -61,7 +74,7 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
         style={styles.touchArea}
       >
         <Animated.View style={[styles.contentBox, { opacity: opacityAnim }]}>
-          {/* Elegant Logo Icon */}
+          {/* Soothing Minimalist Emblem */}
           <View
             style={[
               styles.logoBadge,
@@ -71,26 +84,37 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
               },
             ]}
           >
-            <Utensils size={36} color="#FFFFFF" strokeWidth={2.4} />
+            <Utensils size={34} color="#FFFFFF" strokeWidth={2.4} />
           </View>
 
           {/* Clean App Title */}
-          <View style={styles.titleRow}>
-            <Text style={[styles.brandTitle, { color: theme.textPrimary }]}>
-              MealFit <Text style={{ color: theme.primary }}>India</Text>
-            </Text>
-          </View>
+          <Text style={[styles.brandTitle, { color: theme.textPrimary }]}>
+            MealFit <Text style={{ color: theme.primary }}>India</Text>
+          </Text>
 
           {/* Soothing Tagline */}
           <Text style={[styles.tagline, { color: theme.textSecondary }]}>
-            Smart Indian Nutrition & Athletic Training
+            Smart Indian Nutrition & Living Room Fitness
           </Text>
 
-          {/* Subtle Indicator */}
+          {/* Calm Loading Progress Line */}
+          <View style={[styles.progressTrack, { backgroundColor: theme.cardBorder }]}>
+            <Animated.View
+              style={[
+                styles.progressBar,
+                {
+                  width: progressWidth,
+                  backgroundColor: theme.primary,
+                },
+              ]}
+            />
+          </View>
+
+          {/* Subtle ICMR Note */}
           <View style={styles.footerNote}>
-            <Sparkles size={13} color={theme.primary} />
+            <Sparkles size={12} color={theme.primary} />
             <Text style={[styles.footerText, { color: theme.textMuted }]}>
-              Hyper-Localized • ICMR-NIN Aligned
+              Personalized • 100% Private • Free
             </Text>
           </View>
         </Animated.View>
@@ -120,11 +144,11 @@ const styles = StyleSheet.create({
   },
   contentBox: {
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 36,
   },
   logoBadge: {
-    width: 80,
-    height: 80,
+    width: 76,
+    height: 76,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -134,23 +158,30 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 8,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   brandTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     letterSpacing: -0.5,
+    marginBottom: 8,
     textAlign: 'center',
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 28,
     lineHeight: 20,
+  },
+  progressTrack: {
+    width: 160,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 2,
   },
   footerNote: {
     flexDirection: 'row',
@@ -158,8 +189,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   footerText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
   },
 });
