@@ -6,8 +6,9 @@ import {
   Animated,
   Dimensions,
   TouchableOpacity,
+  Image,
 } from 'react-native';
-import { Utensils, Sparkles } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
@@ -65,7 +66,7 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
     <Animated.View
       style={[
         styles.container,
-        { backgroundColor: theme.background, opacity: fadeOutAnim },
+        { backgroundColor: '#0A0E17', opacity: fadeOutAnim },
       ]}
     >
       <TouchableOpacity
@@ -74,26 +75,22 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
         style={styles.touchArea}
       >
         <Animated.View style={[styles.contentBox, { opacity: opacityAnim }]}>
-          {/* Soothing Minimalist Emblem */}
-          <View
-            style={[
-              styles.logoBadge,
-              {
-                backgroundColor: theme.primary,
-                shadowColor: theme.primary,
-              },
-            ]}
-          >
-            <Utensils size={34} color="#FFFFFF" strokeWidth={2.4} />
+          {/* Dynamic Sweeping Vitality Arc Emblem */}
+          <View style={styles.logoBadge}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.splashIconImage}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Clean App Title */}
-          <Text style={[styles.brandTitle, { color: theme.textPrimary }]}>
-            MealFit <Text style={{ color: theme.primary }}>India</Text>
+          <Text style={[styles.brandTitle, { color: '#FFFFFF' }]}>
+            MealFit <Text style={{ color: '#00E599' }}>India</Text>
           </Text>
 
           {/* Soothing Tagline */}
-          <Text style={[styles.tagline, { color: theme.textSecondary }]}>
+          <Text style={[styles.tagline, { color: '#94A3B8' }]}>
             Smart Indian Nutrition & Living Room Fitness
           </Text>
 
@@ -147,16 +144,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 36,
   },
   logoBadge: {
-    width: 76,
-    height: 76,
+    width: 96,
+    height: 96,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
+    overflow: 'hidden',
+    shadowColor: '#00E599',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  splashIconImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
   },
   brandTitle: {
     fontSize: 26,
