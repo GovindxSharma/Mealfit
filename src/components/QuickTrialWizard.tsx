@@ -8,8 +8,8 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { Colors } from '../theme/colors';
-import { useAuth, DietaryType, EquipmentType } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth, DietaryType, EquipmentType, GoalType, calculateRealisticTargets } from '../context/AuthContext';
 import {
   Sparkles,
   X,
@@ -22,6 +22,11 @@ import {
   User,
   Zap,
   Activity,
+  Flame,
+  IndianRupee,
+  ShieldCheck,
+  Leaf,
+  Egg,
 } from 'lucide-react-native';
 
 interface QuickPlanWizardProps {
@@ -30,16 +35,22 @@ interface QuickPlanWizardProps {
 }
 
 export const QuickTrialWizard: React.FC<QuickPlanWizardProps> = ({ visible, onClose }) => {
-  const { startFreePlan, user } = useAuth();
+  const { theme } = useTheme();
+  const { startFreePlan, user, updateUserProfile } = useAuth();
   const [step, setStep] = useState<number>(1);
 
   // Form states
-  const [weightKg, setWeightKg] = useState<string>('72');
-  const [targetWeightKg, setTargetWeightKg] = useState<string>('68');
-  const [city, setCity] = useState<string>('delhi');
-  const [equipment, setEquipment] = useState<EquipmentType[]>(['bodyweight']);
-  const [diet, setDiet] = useState<DietaryType>('veg');
-  const [budget, setBudget] = useState<number>(1000);
+  const [name, setName] = useState<string>(user.fullName === 'New Member' ? '' : user.fullName);
+  const [gender, setGender] = useState<'male' | 'female'>(user.gender || 'male');
+  const [age, setAge] = useState<string>(user.age ? user.age.toString() : '26');
+  const [heightCm, setHeightCm] = useState<string>(user.heightCm ? user.heightCm.toString() : '172');
+  const [weightKg, setWeightKg] = useState<string>(user.weightKg ? user.weightKg.toString() : '70');
+  const [targetWeightKg, setTargetWeightKg] = useState<string>(user.targetWeightKg ? user.targetWeightKg.toString() : '65');
+  const [goal, setGoal] = useState<GoalType>(user.goalType || 'fat_loss');
+  const [city, setCity] = useState<string>(user.city || 'delhi');
+  const [equipment, setEquipment] = useState<EquipmentType[]>(user.equipment || ['bodyweight']);
+  const [diet, setDiet] = useState<DietaryType>(user.dietaryPreference || 'veg');
+  const [budget, setBudget] = useState<number>(user.weeklyBudgetInr || 1000);
 
   const toggleEquipment = (item: EquipmentType) => {
     if (equipment.includes(item)) {
@@ -49,22 +60,35 @@ export const QuickTrialWizard: React.FC<QuickPlanWizardProps> = ({ visible, onCl
     }
   };
 
-  const handleFinish = () => {
-    const w = parseFloat(weightKg) || 72;
-    const tw = parseFloat(targetWeightKg) || 68;
-    const tdee = Math.round(10 * w + 6.25 * 175 - 5 * 26 + 5);
-    const calorieTarget = tdee - 500;
-    const proteinTarget = Math.round(w * 1.8);
+  const currentW = parseFloat(weightKg) || 70;
+  const targetW = parseFloat(targetWeightKg) || 65;
+  const currentH = parseFloat(heightCm) || 172;
+  const currentA = parseInt(age, 10) || 26;
 
+  // Real-time calculation preview
+  const previewTargets = calculateRealisticTargets(
+    currentW,
+    currentH,
+    currentA,
+    gender,
+    goal,
+    targetW
+  );
+
+  const handleFinish = () => {
+    const finalName = name.trim() || (gender === 'male' ? 'Brother' : 'Sister');
     startFreePlan({
-      weightKg: w,
-      targetWeightKg: tw,
-      city,
+      fullName: finalName,
+      gender,
+      age: currentA,
+      heightCm: currentH,
+      weightKg: currentW,
+      targetWeightKg: targetW,
+      goalType: goal,
+      city: city.trim() || 'delhi',
       equipment,
       dietaryPreference: diet,
       weeklyBudgetInr: budget,
-      dailyCalorieTarget: calorieTarget,
-      proteinTargetG: proteinTarget,
     });
     setStep(1);
     onClose();
@@ -73,186 +97,321 @@ export const QuickTrialWizard: React.FC<QuickPlanWizardProps> = ({ visible, onCl
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
+        <View
+          style={[
+            styles.modalContainer,
+            { backgroundColor: theme.card, borderColor: theme.cardBorder },
+          ]}
+        >
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.badge}>
-              <Sparkles size={13} color={Colors.primary} />
-              <Text style={styles.badgeText}>STEP {step} OF 3</Text>
+          <View style={[styles.header, { borderBottomColor: theme.cardBorder }]}>
+            <View style={[styles.badge, { backgroundColor: theme.primaryLight }]}>
+              <Sparkles size={13} color={theme.primary} />
+              <Text style={[styles.badgeText, { color: theme.primary }]}>STEP {step} OF 3</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-              <X size={18} color={Colors.textSecondary} />
+              <X size={18} color={theme.textSecondary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* Step 1: Goal & City */}
+            {/* Step 1: Name, Gender & Biometrics */}
             {step === 1 && (
               <View style={styles.stepBox}>
-                <Text style={styles.stepTitle}>Your Goal & Location</Text>
-                <Text style={styles.stepDesc}>
-                  We calibrate water needs to your city heat and calculate safe weight targets.
+                <Text style={[styles.stepTitle, { color: theme.textPrimary }]}>
+                  Your Biometrics & Body Stats
+                </Text>
+                <Text style={[styles.stepDesc, { color: theme.textSecondary }]}>
+                  We use Mifflin-St Jeor equations to calculate your exact resting metabolic rate.
                 </Text>
 
-                <View style={styles.inputRow}>
-                  <View style={styles.inputHalf}>
-                    <Text style={styles.inputLabel}>Current Weight (kg)</Text>
+                {/* Name */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Your Name / Nickname</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder, color: theme.textPrimary }]}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="e.g. Arjun"
+                    placeholderTextColor={theme.textMuted}
+                  />
+                </View>
+
+                {/* Gender */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Gender</Text>
+                  <View style={styles.chipRow}>
+                    {(['male', 'female'] as const).map((g) => (
+                      <TouchableOpacity
+                        key={g}
+                        onPress={() => setGender(g)}
+                        style={[
+                          styles.genderChip,
+                          {
+                            backgroundColor: gender === g ? theme.primaryLight : theme.backgroundSecondary,
+                            borderColor: gender === g ? theme.primary : theme.cardBorder,
+                          },
+                        ]}
+                      >
+                        <User size={15} color={gender === g ? theme.primary : theme.textSecondary} />
+                        <Text style={[styles.genderChipText, { color: gender === g ? theme.primary : theme.textSecondary }]}>
+                          {g === 'male' ? 'Male' : 'Female'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Age, Height & Weight Row */}
+                <View style={styles.tripleInputRow}>
+                  <View style={styles.tripleCol}>
+                    <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Age (yrs)</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder, color: theme.textPrimary }]}
+                      value={age}
+                      onChangeText={setAge}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.tripleCol}>
+                    <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Height (cm)</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder, color: theme.textPrimary }]}
+                      value={heightCm}
+                      onChangeText={setHeightCm}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.tripleCol}>
+                    <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Weight (kg)</Text>
+                    <TextInput
+                      style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder, color: theme.textPrimary }]}
                       value={weightKg}
                       onChangeText={setWeightKg}
                       keyboardType="numeric"
                     />
                   </View>
-                  <View style={styles.inputHalf}>
-                    <Text style={styles.inputLabel}>Target Weight (kg)</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={targetWeightKg}
-                      onChangeText={setTargetWeightKg}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.citySection}>
-                  <Text style={styles.inputLabel}>Enter Your City / Location</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={city}
-                    onChangeText={setCity}
-                    placeholder="e.g. Pune, Jaipur, Lucknow, Indore, Delhi..."
-                    placeholderTextColor={Colors.textMuted}
-                  />
                 </View>
 
                 <TouchableOpacity
                   onPress={() => setStep(2)}
-                  style={styles.nextBtn}
-                  activeOpacity={0.8}
+                  style={[styles.nextBtn, { backgroundColor: theme.primary }]}
+                  activeOpacity={0.85}
                 >
-                  <Text style={styles.nextBtnText}>Next: Equipment</Text>
-                  <ArrowRight size={16} color="#FFFFFF" />
+                  <Text style={[styles.nextBtnText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
+                    Next: Goal & Target Weight
+                  </Text>
+                  <ArrowRight size={16} color={theme.isDark ? '#000000' : '#FFFFFF'} />
                 </TouchableOpacity>
               </View>
             )}
 
-            {/* Step 2: Equipment */}
+            {/* Step 2: Goal, Target Weight & Equipment */}
             {step === 2 && (
               <View style={styles.stepBox}>
-                <Text style={styles.stepTitle}>What Equipment Do You Have?</Text>
-                <Text style={styles.stepDesc}>
-                  Your workouts will only include exercises you can actually perform at home.
+                <Text style={[styles.stepTitle, { color: theme.textPrimary }]}>
+                  Your Goal & Fitness Setup
+                </Text>
+                <Text style={[styles.stepDesc, { color: theme.textSecondary }]}>
+                  Select your primary fitness transformation target and available home gear.
                 </Text>
 
-                <View style={styles.optionsList}>
-                  {[
-                    { key: 'bodyweight', title: 'Zero Equipment (Living Room Floor)', sub: 'Bodyweight tempo squats, pushup progressions' },
-                    { key: 'bands', title: 'Resistance Bands', sub: 'Loop & tube bands for rows and presses' },
-                    { key: 'dumbbells', title: 'Dumbbells or Water Bottles', sub: 'Adjustable or fixed home weights' },
-                    { key: 'gym', title: 'Full Gym Access', sub: 'Barbells, cables & machines' },
-                  ].map((eq) => {
-                    const active = equipment.includes(eq.key as EquipmentType);
-                    return (
-                      <TouchableOpacity
-                        key={eq.key}
-                        onPress={() => toggleEquipment(eq.key as EquipmentType)}
-                        style={[styles.optionCard, active && styles.optionCardActive]}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.optionTextCol}>
-                          <Text style={[styles.optionTitle, active && styles.optionTitleActive]}>
-                            {eq.title}
-                          </Text>
-                          <Text style={styles.optionSub}>{eq.sub}</Text>
-                        </View>
-                        <View style={[styles.checkCircle, active && styles.checkCircleActive]}>
-                          {active && <Check size={12} color="#000000" />}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
+                {/* Goal Selector */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Primary Goal</Text>
+                  <View style={styles.goalGrid}>
+                    {[
+                      { key: 'fat_loss', label: 'Fat Loss & Toning', desc: 'Caloric deficit with high protein', icon: Flame, iconColor: theme.rose },
+                      { key: 'muscle_gain', label: 'Muscle Building', desc: 'Lean surplus with progressive overload', icon: Dumbbell, iconColor: theme.primary },
+                      { key: 'recomp', label: 'Body Recomposition', desc: 'Lose fat & build muscle simultaneously', icon: Activity, iconColor: theme.amber },
+                      { key: 'low_gi_pcod', label: 'Low GI & PCOD Control', desc: 'Insulin-stabilizing Indian meals', icon: ShieldCheck, iconColor: theme.cyan },
+                    ].map((g) => {
+                      const IconComp = g.icon;
+                      return (
+                        <TouchableOpacity
+                          key={g.key}
+                          onPress={() => setGoal(g.key as GoalType)}
+                          style={[
+                            styles.goalCard,
+                            {
+                              backgroundColor: goal === g.key ? theme.primaryLight : theme.backgroundSecondary,
+                              borderColor: goal === g.key ? theme.primary : theme.cardBorder,
+                            },
+                          ]}
+                        >
+                          <View style={styles.goalTitleRow}>
+                            <IconComp size={16} color={goal === g.key ? theme.primary : g.iconColor} />
+                            <Text style={[styles.goalCardTitle, { color: goal === g.key ? theme.primary : theme.textPrimary }]}>
+                              {g.label}
+                            </Text>
+                          </View>
+                          <Text style={[styles.goalCardDesc, { color: theme.textMuted }]}>{g.desc}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {/* Target Weight */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Target Weight (kg)</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder, color: theme.textPrimary }]}
+                    value={targetWeightKg}
+                    onChangeText={setTargetWeightKg}
+                    keyboardType="numeric"
+                  />
                 </View>
 
                 <View style={styles.btnRow}>
-                  <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
-                    <Text style={styles.backBtnText}>Back</Text>
+                  <TouchableOpacity
+                    onPress={() => setStep(1)}
+                    style={[styles.backBtn, { borderColor: theme.cardBorder }]}
+                  >
+                    <Text style={[styles.backBtnText, { color: theme.textSecondary }]}>Back</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setStep(3)}
-                    style={styles.nextBtnFlex}
-                    activeOpacity={0.8}
+                    style={[styles.nextBtnFlex, { backgroundColor: theme.primary }]}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.nextBtnText}>Next: Diet & Budget</Text>
-                    <ArrowRight size={16} color="#FFFFFF" />
+                    <Text style={[styles.nextBtnText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
+                      Next: Diet & Budget
+                    </Text>
+                    <ArrowRight size={16} color={theme.isDark ? '#000000' : '#FFFFFF'} />
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
-            {/* Step 3: Diet & Budget */}
+            {/* Step 3: Diet, Weekly Kirana Budget & Summary */}
             {step === 3 && (
               <View style={styles.stepBox}>
-                <Text style={styles.stepTitle}>Diet & Kirana Budget</Text>
-                <Text style={styles.stepDesc}>
-                  Our optimizer will create meal combinations within your grocery spend limit.
+                <Text style={[styles.stepTitle, { color: theme.textPrimary }]}>
+                  Diet & Grocery Budget
+                </Text>
+                <Text style={[styles.stepDesc, { color: theme.textSecondary }]}>
+                  Our optimizer ensures 100% of your meals fit within your weekly grocery budget.
                 </Text>
 
-                <View style={styles.subSection}>
-                  <Text style={styles.inputLabel}>Dietary Preference</Text>
-                  <View style={styles.dietGrid}>
+                {/* Dietary Preference */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Dietary Preference</Text>
+                  <View style={styles.dietRow}>
                     {[
-                      { key: 'veg', label: 'Pure Veg' },
-                      { key: 'jain', label: 'Jain' },
-                      { key: 'eggetarian', label: 'Eggetarian' },
-                      { key: 'non_veg', label: 'Non-Veg' },
-                    ].map((d) => (
+                      { key: 'veg', label: 'Pure Veg', icon: Leaf },
+                      { key: 'jain', label: 'Jain', icon: Sparkles },
+                      { key: 'eggetarian', label: 'Eggetarian', icon: Egg },
+                      { key: 'non_veg', label: 'Non-Veg', icon: Utensils },
+                    ].map((d) => {
+                      const DietIcon = d.icon;
+                      return (
+                        <TouchableOpacity
+                          key={d.key}
+                          onPress={() => setDiet(d.key as DietaryType)}
+                          style={[
+                            styles.dietCard,
+                            {
+                              backgroundColor: diet === d.key ? theme.primaryLight : theme.backgroundSecondary,
+                              borderColor: diet === d.key ? theme.primary : theme.cardBorder,
+                            },
+                          ]}
+                        >
+                          <DietIcon size={14} color={diet === d.key ? theme.primary : theme.textSecondary} />
+                          <Text style={[styles.dietCardText, { color: diet === d.key ? theme.primary : theme.textSecondary }]}>
+                            {d.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {/* Weekly Kirana Budget */}
+                <View style={styles.inputGroup}>
+                  <View style={styles.budgetHeader}>
+                    <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Weekly Grocery Spend</Text>
+                    <Text style={[styles.budgetValText, { color: theme.amber }]}>₹{budget}/week</Text>
+                  </View>
+                  <View style={styles.budgetRow}>
+                    {[600, 1000, 1500, 2000].map((b) => (
                       <TouchableOpacity
-                        key={d.key}
-                        onPress={() => setDiet(d.key as DietaryType)}
-                        style={[styles.dietCard, diet === d.key && styles.dietCardActive]}
+                        key={b}
+                        onPress={() => setBudget(b)}
+                        style={[
+                          styles.budgetBtn,
+                          {
+                            backgroundColor: budget === b ? theme.amberLight : theme.backgroundSecondary,
+                            borderColor: budget === b ? theme.amber : theme.cardBorder,
+                          },
+                        ]}
                       >
-                        <Text style={[styles.dietCardText, diet === d.key && styles.dietCardTextActive]}>
-                          {d.label}
+                        <Text style={[styles.budgetBtnText, { color: budget === b ? theme.amber : theme.textSecondary }]}>
+                          ₹{b}
                         </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 </View>
 
-                <View style={styles.subSection}>
-                  <Text style={styles.inputLabel}>Weekly Kirana Grocery Budget</Text>
-                  <View style={styles.budgetRow}>
-                    {[
-                      { val: 700, label: '₹700 / wk' },
-                      { val: 1000, label: '₹1,000 / wk' },
-                      { val: 1400, label: '₹1,400 / wk' },
-                      { val: 2000, label: '₹2,000 / wk' },
-                    ].map((b) => (
-                      <TouchableOpacity
-                        key={b.val}
-                        onPress={() => setBudget(b.val)}
-                        style={[styles.budgetBtn, budget === b.val && styles.budgetBtnActive]}
-                      >
-                        <Text style={[styles.budgetBtnText, budget === b.val && styles.budgetBtnTextActive]}>
-                          {b.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                {/* City */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Your City / Location</Text>
+                  <TextInput
+                    style={[styles.input, { backgroundColor: theme.backgroundSecondary, borderColor: theme.cardBorder, color: theme.textPrimary }]}
+                    value={city}
+                    onChangeText={setCity}
+                    placeholder="e.g. Pune, Delhi, Mumbai, Jaipur..."
+                    placeholderTextColor={theme.textMuted}
+                  />
+                </View>
+
+                {/* Real-time Calculated Targets Summary Card */}
+                <View style={[styles.calcSummaryCard, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+                  <View style={styles.calcSummaryHeader}>
+                    <Flame size={16} color={theme.primary} />
+                    <Text style={[styles.calcSummaryTitle, { color: theme.primary }]}>
+                      Calculated Targets for You
+                    </Text>
+                  </View>
+                  <View style={styles.calcGrid}>
+                    <View style={styles.calcItem}>
+                      <Text style={[styles.calcLabel, { color: theme.textMuted }]}>Calories</Text>
+                      <Text style={[styles.calcValue, { color: theme.textPrimary }]}>
+                        {previewTargets.dailyCalorieTarget} kcal
+                      </Text>
+                    </View>
+                    <View style={styles.calcItem}>
+                      <Text style={[styles.calcLabel, { color: theme.textMuted }]}>Protein</Text>
+                      <Text style={[styles.calcValue, { color: theme.primary }]}>
+                        {previewTargets.proteinTargetG}g / day
+                      </Text>
+                    </View>
+                    <View style={styles.calcItem}>
+                      <Text style={[styles.calcLabel, { color: theme.textMuted }]}>Est. Timeline</Text>
+                      <Text style={[styles.calcValue, { color: theme.amber }]}>
+                        ~{previewTargets.estimatedWeeksToGoal} wks
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
                 <View style={styles.btnRow}>
-                  <TouchableOpacity onPress={() => setStep(2)} style={styles.backBtn}>
-                    <Text style={styles.backBtnText}>Back</Text>
+                  <TouchableOpacity
+                    onPress={() => setStep(2)}
+                    style={[styles.backBtn, { borderColor: theme.cardBorder }]}
+                  >
+                    <Text style={[styles.backBtnText, { color: theme.textSecondary }]}>Back</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleFinish}
-                    style={styles.finishBtnFlex}
-                    activeOpacity={0.8}
+                    style={[styles.finishBtnFlex, { backgroundColor: theme.primary }]}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.finishBtnText}>Launch Free Plan</Text>
-                    <Check size={16} color="#FFFFFF" />
+                    <Text style={[styles.finishBtnText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
+                      Apply & View Indian Diet
+                    </Text>
+                    <Check size={16} color={theme.isDark ? '#000000' : '#FFFFFF'} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -267,16 +426,14 @@ export const QuickTrialWizard: React.FC<QuickPlanWizardProps> = ({ visible, onCl
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: Colors.card,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
-    maxHeight: '90%',
+    maxHeight: '92%',
     paddingHorizontal: 20,
     paddingTop: 18,
   },
@@ -285,145 +442,103 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingBottom: 12,
+    borderBottomWidth: 1,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: Colors.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
-    color: Colors.primary,
   },
   closeBtn: {
     padding: 6,
   },
   scrollContent: {
-    paddingVertical: 10,
+    paddingVertical: 14,
+    gap: 16,
     paddingBottom: 36,
   },
   stepBox: {
-    gap: 16,
+    gap: 14,
   },
   stepTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.textPrimary,
   },
   stepDesc: {
     fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 17,
   },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  inputHalf: {
-    flex: 1,
+  inputGroup: {
     gap: 6,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: Colors.textSecondary,
   },
   input: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: Colors.textPrimary,
   },
-  citySection: {
-    gap: 8,
-  },
-  pillRowWrap: {
+  chipRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  cityPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  cityPillActive: {
-    backgroundColor: Colors.cyanLight,
-    borderColor: Colors.cyan,
-  },
-  cityText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  cityTextActive: {
-    color: Colors.cyan,
-    fontWeight: '700',
-  },
-  optionsList: {
     gap: 10,
   },
-  optionCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-    padding: 14,
-  },
-  optionCardActive: {
-    backgroundColor: Colors.primaryLight,
-    borderColor: Colors.primary,
-  },
-  optionTextCol: {
+  genderChip: {
     flex: 1,
-    gap: 3,
-    paddingRight: 10,
-  },
-  optionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  optionTitleActive: {
-    color: Colors.textPrimary,
-  },
-  optionSub: {
-    fontSize: 10,
-    color: Colors.textMuted,
-  },
-  checkCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: Colors.textMuted,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  checkCircleActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+  genderChipText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
-  subSection: {
+  tripleInputRow: {
+    flexDirection: 'row',
     gap: 8,
   },
-  dietGrid: {
+  tripleCol: {
+    flex: 1,
+    gap: 6,
+  },
+  goalGrid: {
+    gap: 8,
+  },
+  goalCard: {
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 4,
+  },
+  goalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  goalCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  goalCardDesc: {
+    fontSize: 10.5,
+    paddingLeft: 24,
+  },
+  dietRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
@@ -431,83 +546,101 @@ const styles = StyleSheet.create({
   dietCard: {
     flex: 1,
     minWidth: '45%',
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  dietCardActive: {
-    backgroundColor: Colors.primaryLight,
-    borderColor: Colors.primary,
   },
   dietCardText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textSecondary,
   },
-  dietCardTextActive: {
-    color: Colors.primary,
+  budgetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  budgetValText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   budgetRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   budgetBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 9,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  budgetBtnActive: {
-    backgroundColor: Colors.amberLight,
-    borderColor: Colors.amber,
   },
   budgetBtnText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
-    color: Colors.textSecondary,
   },
-  budgetBtnTextActive: {
-    color: Colors.amber,
+  calcSummaryCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    gap: 8,
+  },
+  calcSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  calcSummaryTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  calcGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  calcItem: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  calcLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  calcValue: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   nextBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 14,
-    marginTop: 8,
+    marginTop: 4,
   },
   nextBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '800',
   },
   btnRow: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 8,
+    marginTop: 4,
   },
   backBtn: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1,
-    borderColor: Colors.cardBorder,
     alignItems: 'center',
   },
   backBtnText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
+    fontWeight: '700',
   },
   nextBtnFlex: {
     flex: 1,
@@ -515,7 +648,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 14,
   },
@@ -525,13 +657,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 14,
   },
   finishBtnText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
 });

@@ -5,8 +5,12 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAuth } from '../../src/context/AuthContext';
+import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import {
   ArrowLeftRight,
   Sparkles,
@@ -19,11 +23,17 @@ import {
   Droplets,
   Plus,
   Minus,
+  Lock,
+  ArrowRight,
 } from 'lucide-react-native';
 
 export default function SmartSwapsScreen() {
   const { theme } = useTheme();
+  const { isLoggedIn } = useAuth();
+  const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'swaps' | 'cheat_decoder' | 'chai_calc'>('swaps');
+  const insets = useSafeAreaInsets();
+  const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
 
   // Cheat decoder state
   const [selectedCheat, setSelectedCheat] = useState<string>('samosa');
@@ -130,7 +140,7 @@ export default function SmartSwapsScreen() {
   const yearlySugarCalories = Math.round(totalDailySugarG * 4 * 365);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topSafeDistance }]}>
       {/* 1. Header Bar */}
       <View style={[styles.topBar, { borderBottomColor: theme.cardBorder }]}>
         <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Smart Swaps & Intelligence</Text>
@@ -183,6 +193,30 @@ export default function SmartSwapsScreen() {
 
       {/* Main Content */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Unauthenticated Feature Lock Banner */}
+        {!isLoggedIn && (
+          <TouchableOpacity
+            onPress={() => setShowAuthGate(true)}
+            style={[styles.lockedBanner, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.lockedIconCircle, { backgroundColor: theme.primary }]}>
+              <Lock size={15} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.lockedBannerTitle, { color: theme.textPrimary }]}>
+                Member Intelligence Locked
+              </Text>
+              <Text style={[styles.lockedBannerDesc, { color: theme.textSecondary }]}>
+                Sign In with Google or Email to unlock the AI Food Scanner, Protein Linear Optimizer & Cheat Offsets.
+              </Text>
+            </View>
+            <View style={[styles.unlockPill, { backgroundColor: theme.primary }]}>
+              <Text style={styles.unlockPillText}>Unlock</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {activeTab === 'swaps' ? (
           /* ================= 1. PROTEIN SWAPS ================= */
           <View style={styles.swapsList}>
@@ -375,6 +409,14 @@ export default function SmartSwapsScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Sign In Required Modal */}
+      <AuthRequiredModal
+        visible={showAuthGate}
+        onClose={() => setShowAuthGate(false)}
+        title="Unlock Smart Swaps & AI Scanner"
+        subtitle="Sign in with Google or Email to unlock AI Multi-Curry Vision Scanner, full Indian protein swap database & cheat offsets."
+      />
     </View>
   );
 }
@@ -382,6 +424,40 @@ export default function SmartSwapsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  lockedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+    marginBottom: 6,
+  },
+  lockedIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockedBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  lockedBannerDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  unlockPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  unlockPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   topBar: {
     paddingHorizontal: 16,

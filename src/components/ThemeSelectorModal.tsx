@@ -14,6 +14,7 @@ import {
   Check,
   Moon,
   Sun,
+  Smartphone,
 } from 'lucide-react-native';
 
 interface ThemeSelectorModalProps {
@@ -25,44 +26,22 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
   visible,
   onClose,
 }) => {
-  const { theme, themeMode, setThemeMode } = useTheme();
+  const { theme } = useTheme();
 
-  const themesList: {
-    key: ThemeMode;
-    name: string;
-    description: string;
-    primaryHex: string;
-    bgHex: string;
-    cardHex: string;
-    icon: typeof Moon;
-    tag: string;
-  }[] = [
-    {
-      key: 'matte_black',
-      name: 'Matte Dark Black',
-      description: 'Pure matte black (#000000) canvas with crisp charcoal cards & electric ice blue.',
-      primaryHex: '#38BDF8',
-      bgHex: '#000000',
-      cardHex: '#121212',
-      icon: Moon,
-      tag: 'FLAGSHIP MATTE DARK',
-    },
-    {
-      key: 'light_clean',
-      name: 'Clean Pearl Light Mode',
-      description: 'Crisp, daylight white surface with deep royal indigo and high readability.',
-      primaryHex: '#4F46E5',
-      bgHex: '#F8FAFC',
-      cardHex: '#FFFFFF',
-      icon: Sun,
-      tag: 'DAYLIGHT CLEAN',
-    },
+  const paletteSwatches = [
+    { label: 'Primary Teal', hex: '#1488A6', textHex: '#FFFFFF' },
+    { label: 'Secondary Mint', hex: '#20D4BF', textHex: '#0F172A' },
+    { label: 'Accent Soft Green', hex: '#CCF8F1', textHex: '#0F172A' },
+    { label: 'Light Background', hex: '#FFFFFF', textHex: '#0F172A', border: true },
+    { label: 'Surface Card', hex: '#F7FBF8', textHex: '#0F172A', border: true },
+    { label: 'Text Dark', hex: '#0F172A', textHex: '#FFFFFF' },
+    { label: 'Text Muted', hex: '#64748B', textHex: '#FFFFFF' },
   ];
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.modalContainer, { backgroundColor: '#FFFFFF', borderColor: theme.cardBorder }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: theme.cardBorder }]}>
             <View style={styles.headerTitleRow}>
@@ -70,9 +49,9 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
                 <Palette size={18} color={theme.primary} />
               </View>
               <View>
-                <Text style={[styles.title, { color: theme.textPrimary }]}>Choose App Theme</Text>
+                <Text style={[styles.title, { color: theme.textPrimary }]}>5. Teal Balance</Text>
                 <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                  Matte Dark Black & Clean Pearl Light
+                  Calm • Balanced • Holistic
                 </Text>
               </View>
             </View>
@@ -82,60 +61,51 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            <Text style={[styles.sectionHeading, { color: theme.textMuted }]}>
-              SELECT YOUR THEME
-            </Text>
+            {/* Active Theme Badge Card */}
+            <View style={[styles.activeThemeCard, { backgroundColor: theme.card, borderColor: theme.primary }]}>
+              <View style={styles.themeCardHeader}>
+                <View style={styles.titleWithBadge}>
+                  <Text style={[styles.themeMainTitle, { color: theme.textPrimary }]}>Teal Balance System</Text>
+                  <View style={[styles.activeBadge, { backgroundColor: theme.primary }]}>
+                    <Check size={11} color="#FFFFFF" />
+                    <Text style={styles.activeBadgeText}>ACTIVE THEME</Text>
+                  </View>
+                </View>
+                <Text style={[styles.themeDescription, { color: theme.textSecondary }]}>
+                  A soothing, fresh and clean theme that promotes balance between fitness, nutrition and well-being.
+                </Text>
+              </View>
 
-            <View style={styles.themeGrid}>
-              {themesList.map((t) => {
-                const isSelected = themeMode === t.key;
-                const IconComponent = t.icon;
-                return (
-                  <TouchableOpacity
-                    key={t.key}
-                    onPress={() => setThemeMode(t.key)}
-                    style={[
-                      styles.themeCard,
-                      {
-                        backgroundColor: isSelected ? theme.primaryLight : 'rgba(255, 255, 255, 0.02)',
-                        borderColor: isSelected ? theme.primary : theme.cardBorder,
-                      },
-                    ]}
-                    activeOpacity={0.85}
-                  >
-                    <View style={styles.swatchRow}>
-                      <View style={styles.iconAndSwatches}>
-                        <View style={[styles.modeIconBox, { backgroundColor: isSelected ? theme.primary : 'rgba(255, 255, 255, 0.06)' }]}>
-                          <IconComponent size={16} color={isSelected ? (theme.isDark ? '#000000' : '#FFFFFF') : theme.textSecondary} />
-                        </View>
-                        <View style={styles.swatchCircles}>
-                          <View style={[styles.circle, { backgroundColor: t.bgHex, borderColor: '#475569' }]} />
-                          <View style={[styles.circle, { backgroundColor: t.cardHex, marginLeft: -8, borderColor: '#475569' }]} />
-                          <View style={[styles.circle, { backgroundColor: t.primaryHex, marginLeft: -8, borderColor: '#FFFFFF' }]} />
-                        </View>
-                      </View>
-
-                      <View style={[styles.tagPill, { backgroundColor: isSelected ? theme.primary : 'rgba(255, 255, 255, 0.08)' }]}>
-                        <Text style={[styles.tagText, { color: isSelected ? (theme.isDark ? '#000000' : '#FFFFFF') : theme.textMuted }]}>
-                          {t.tag}
-                        </Text>
-                      </View>
+              {/* Color Swatches Grid */}
+              <View style={styles.swatchSection}>
+                <Text style={[styles.sectionHeading, { color: theme.textMuted }]}>COLOR PALETTE</Text>
+                <View style={styles.swatchesGrid}>
+                  {paletteSwatches.map((s) => (
+                    <View key={s.label} style={styles.swatchItem}>
+                      <View
+                        style={[
+                          styles.swatchBlock,
+                          {
+                            backgroundColor: s.hex,
+                            borderColor: s.border ? theme.cardBorder : s.hex,
+                          },
+                        ]}
+                      />
+                      <Text style={[styles.swatchLabel, { color: theme.textPrimary }]}>{s.label}</Text>
+                      <Text style={[styles.swatchHex, { color: theme.textMuted }]}>{s.hex}</Text>
                     </View>
+                  ))}
+                </View>
+              </View>
 
-                    <View style={styles.themeInfo}>
-                      <Text style={[styles.themeName, { color: theme.textPrimary }]}>{t.name}</Text>
-                      <Text style={[styles.themeDesc, { color: theme.textSecondary }]}>{t.description}</Text>
-                    </View>
-
-                    {isSelected && (
-                      <View style={[styles.activeIndicator, { backgroundColor: theme.primary }]}>
-                        <Check size={12} color={theme.isDark ? '#000000' : '#FFFFFF'} />
-                        <Text style={[styles.activeText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>Active Theme</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+              {/* Typography info */}
+              <View style={styles.metaRow}>
+                <View style={styles.metaCol}>
+                  <Text style={[styles.metaTitle, { color: theme.textMuted }]}>TYPOGRAPHY</Text>
+                  <Text style={[styles.metaValue, { color: theme.textPrimary }]}>Nunito Sans</Text>
+                  <Text style={[styles.metaSub, { color: theme.textSecondary }]}>Modern, rounded & highly readable</Text>
+                </View>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -143,8 +113,8 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
               style={[styles.doneBtn, { backgroundColor: theme.primary }]}
               activeOpacity={0.85}
             >
-              <Text style={[styles.doneBtnText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
-                Apply Theme
+              <Text style={styles.doneBtnText}>
+                Done
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -157,7 +127,7 @@ export const ThemeSelectorModal: React.FC<ThemeSelectorModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
@@ -166,7 +136,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 20,
     paddingTop: 18,
-    paddingBottom: 24,
+    paddingBottom: 28,
   },
   header: {
     flexDirection: 'row',
@@ -193,6 +163,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 11,
+    fontWeight: '600',
   },
   closeBtn: {
     padding: 6,
@@ -201,88 +172,104 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 14,
   },
+  activeThemeCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 14,
+  },
+  themeCardHeader: {
+    gap: 6,
+  },
+  titleWithBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  themeMainTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  activeBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  themeDescription: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  swatchSection: {
+    gap: 8,
+    paddingTop: 6,
+  },
   sectionHeading: {
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
-  themeGrid: {
-    gap: 12,
-  },
-  themeCard: {
-    borderRadius: 16,
-    borderWidth: 1.5,
-    padding: 16,
+  swatchesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
-  swatchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  swatchItem: {
+    width: '30%',
     alignItems: 'center',
+    gap: 4,
   },
-  iconAndSwatches: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  modeIconBox: {
-    width: 30,
-    height: 30,
+  swatchBlock: {
+    width: '100%',
+    height: 34,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 1,
   },
-  swatchCircles: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  swatchLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
   },
-  circle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-  },
-  tagPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  tagText: {
+  swatchHex: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '600',
   },
-  themeInfo: {
+  metaRow: {
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  metaCol: {
     gap: 2,
   },
-  themeName: {
-    fontSize: 14,
+  metaTitle: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  metaValue: {
+    fontSize: 13,
     fontWeight: '800',
   },
-  themeDesc: {
+  metaSub: {
     fontSize: 11,
-    lineHeight: 16,
-  },
-  activeIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  activeText: {
-    fontSize: 10,
-    fontWeight: '800',
   },
   doneBtn: {
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   doneBtnText: {
     fontSize: 13,
     fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

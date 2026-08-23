@@ -5,9 +5,12 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, EquipmentType } from '../../src/context/AuthContext';
+import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import {
   Dumbbell,
   Clock,
@@ -18,6 +21,7 @@ import {
   Check,
   Flame,
   Zap,
+  Lock,
 } from 'lucide-react-native';
 
 interface Exercise {
@@ -35,8 +39,11 @@ interface Exercise {
 
 export default function WorkoutScreen() {
   const { theme } = useTheme();
-  const { user, completedExerciseIds, toggleExerciseCompleted } = useAuth();
+  const { user, completedExerciseIds, toggleExerciseCompleted, isLoggedIn } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
+  const insets = useSafeAreaInsets();
+  const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
 
   // Rest Timer State
   const [timerSeconds, setTimerSeconds] = useState<number>(60);
@@ -148,7 +155,7 @@ export default function WorkoutScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.contentContainer, { paddingTop: topSafeDistance }]}>
         {/* 1. Header Bar */}
         <View style={styles.topHeader}>
           <View>
@@ -263,6 +270,29 @@ export default function WorkoutScreen() {
 
         {/* 4. Exercise Cards List */}
         <View style={styles.exercisesList}>
+          {!isLoggedIn && (
+            <TouchableOpacity
+              onPress={() => setShowAuthGate(true)}
+              style={[styles.lockedBanner, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.lockedIconCircle, { backgroundColor: theme.primary }]}>
+                <Lock size={15} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.lockedBannerTitle, { color: theme.textPrimary }]}>
+                  Workout Logging Locked
+                </Text>
+                <Text style={[styles.lockedBannerDesc, { color: theme.textSecondary }]}>
+                  Sign in with Google or Email to record exercise completion, track streaks, and sync calories burned.
+                </Text>
+              </View>
+              <View style={[styles.unlockPill, { backgroundColor: theme.primary }]}>
+                <Text style={styles.unlockPillText}>Sign In</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
           {filteredExercises.map((ex) => {
             const isDone = completedExerciseIds.includes(ex.id);
             return (
@@ -283,7 +313,13 @@ export default function WorkoutScreen() {
                   </View>
 
                   <TouchableOpacity
-                    onPress={() => toggleExerciseCompleted(ex.id, ex.burnCalories)}
+                    onPress={() => {
+                      if (!isLoggedIn) {
+                        setShowAuthGate(true);
+                        return;
+                      }
+                      toggleExerciseCompleted(ex.id, ex.burnCalories);
+                    }}
                     style={[
                       styles.doneCheckBtn,
                       {
@@ -326,6 +362,14 @@ export default function WorkoutScreen() {
           })}
         </View>
       </ScrollView>
+
+      {/* Auth Gate Modal */}
+      <AuthRequiredModal
+        visible={showAuthGate}
+        onClose={() => setShowAuthGate(false)}
+        title="Sign In to Track Workouts"
+        subtitle="Sign in with Google or Email to log completed workout sets, track calorie burn streaks & progressive overload."
+      />
     </View>
   );
 }
@@ -333,6 +377,40 @@ export default function WorkoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  lockedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+    marginBottom: 8,
+  },
+  lockedIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockedBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  lockedBannerDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  unlockPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  unlockPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   contentContainer: {
     padding: 16,

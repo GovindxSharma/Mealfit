@@ -40,7 +40,7 @@ export default function BiometricsScreen() {
             style={[styles.genderBtn, gender === 'male' && styles.genderBtnActive]}
           >
             <Text style={[styles.genderText, gender === 'male' && styles.genderTextActive]}>
-              👨 Male
+              Male
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -48,7 +48,7 @@ export default function BiometricsScreen() {
             style={[styles.genderBtn, gender === 'female' && styles.genderBtnActive]}
           >
             <Text style={[styles.genderText, gender === 'female' && styles.genderTextActive]}>
-              👩 Female
+              Female
             </Text>
           </TouchableOpacity>
         </View>
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   input: {
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: Colors.cardBorder,
     borderRadius: 12,

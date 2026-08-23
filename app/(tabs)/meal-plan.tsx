@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Share,
   Alert,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, MealSlot, LoggedMealEntry } from '../../src/context/AuthContext';
 import { CustomMealModal } from '../../src/components/CustomMealModal';
@@ -46,6 +48,8 @@ export default function MealPlanScreen() {
   const [showCustomModal, setShowCustomModal] = useState<boolean>(false);
   const [modalSlot, setModalSlot] = useState<MealSlot>('lunch');
   const [budgetPerDay, setBudgetPerDay] = useState<number>(Math.round(user.weeklyBudgetInr / 7) || 90);
+  const insets = useSafeAreaInsets();
+  const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
 
   // Generate 7-day past date list for calendar selector
   const generateDatesList = () => {
@@ -100,27 +104,27 @@ export default function MealPlanScreen() {
   const presetSchedule = getPresetSchedule(budgetPerDay);
 
   const handleShareKiranaList = async () => {
-    const listText = `🛒 *MealFit 7-Day Indian Kirana Grocery List* (${user.dietaryPreference.toUpperCase()})
+    const listText = `*MealFit 7-Day Indian Kirana Grocery List* (${user.dietaryPreference.toUpperCase()})
 ━━━━━━━━━━━━━━━━━━━━
-📦 *High-Yield Protein Staples:*
+*High-Yield Protein Staples:*
 • Soya Chunks (Nutrela): 500g (~₹65, 260g Protein)
 • Chana Sattu (Roasted Gram): 1 kg (~₹120, 220g Protein)
 • Kala Chana (Black Chickpeas): 1 kg (~₹95, 200g Protein)
 • Yellow Moong Dal: 1 kg (~₹130, 240g Protein)
 • Ghar Ka Dahi (Set Curd): 1 kg (~₹80, 45g Protein)
 
-🌾 *Grains & Carbs:*
+*Grains & Carbs:*
 • Whole Wheat Atta (Chakki Fresh): 5 kg (~₹210)
 • Rolled Oats: 500g (~₹90)
 
-🌿 *Veggies & Fat Source:*
+*Veggies & Fat Source:*
 • Desi Ghee: 250g (~₹175)
 • Cucumber, Tomatoes, Green Chillies: 2 kg (~₹80)
 • Lemons: 6 pieces (~₹20)
 
 ━━━━━━━━━━━━━━━━━━━━
-💰 *Estimated Weekly Spend:* ₹${user.weeklyBudgetInr}
-💪 *Avg Daily Protein:* 95g - 130g
+*Estimated Weekly Spend:* ₹${user.weeklyBudgetInr}
+*Avg Daily Protein:* 95g - 130g
 Generated via MealFit India App`;
 
     try {
@@ -134,7 +138,7 @@ Generated via MealFit India App`;
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topSafeDistance }]}>
       {/* 1. Header Bar with 1-Tap Log Meal Trigger */}
       <View style={[styles.topBar, { borderBottomColor: theme.cardBorder }]}>
         <View>

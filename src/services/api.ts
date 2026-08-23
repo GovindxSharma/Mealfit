@@ -1,17 +1,33 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// 🌐 Live Render Production URL (Used in standalone APK builds)
+// Live Render Production URL (Used in standalone APK builds)
 export const RENDER_PRODUCTION_API_URL = 'https://mealfitserviceapi.onrender.com/api';
 
 // Optional Cloudflare tunnel URL
 export const CLOUDFLARE_TUNNEL_URL = 'https://gcc-mrna-bodies-attached.trycloudflare.com/api';
 
 let customApiHost: string | null = null;
+let currentAuthToken: string | null = null;
 
 export const setCustomApiHost = (host: string) => {
   customApiHost = host.trim();
-  console.log(`🌐 [MealFit] Custom API Host updated to: ${customApiHost}`);
+  console.log(`[MealFit] Custom API Host updated to: ${customApiHost}`);
+};
+
+export const setAuthToken = (token: string | null) => {
+  currentAuthToken = token;
+};
+
+export const getAuthToken = () => currentAuthToken;
+
+export const getLocalDevApiUrl = (): string => {
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(':')[0];
+    return `http://${host}:5050/api`;
+  }
+  return 'http://localhost:5050/api';
 };
 
 export const getApiBaseUrl = (): string => {
@@ -25,29 +41,45 @@ export const getApiBaseUrl = (): string => {
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  // 3. Default to the Live Render Backend URL across mobile, web, Expo Go & APK builds!
+  // 3. In local development / Expo Go, connect directly to local dev backend
+  if (__DEV__) {
+    return getLocalDevApiUrl();
+  }
+
+  // 4. Default to the Live Render Backend URL across standalone APK builds
   return RENDER_PRODUCTION_API_URL;
 };
 
 export async function fetchMobileApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const base = getApiBaseUrl();
-  const url = `${base}${endpoint}`;
+  const primaryBase = getApiBaseUrl();
+  const localDevBase = getLocalDevApiUrl();
 
-  // 8-second timeout via AbortController
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  };
 
+  if (currentAuthToken && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${currentAuthToken}`;
+  }
+
+  // Try primary URL first
   try {
-    const response = await fetch(url, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const response = await fetch(`${primaryBase}${endpoint}`, {
       ...options,
       signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
+      headers,
     });
 
     clearTimeout(timeoutId);
+
+    if (response.status === 404 && primaryBase !== localDevBase) {
+      // If endpoint is not found on live render (e.g. pending deploy), fallback to local backend!
+      throw new Error(`Endpoint not found on ${primaryBase}`);
+    }
 
     const json = await response.json();
     if (!response.ok && response.status !== 207) {
@@ -55,77 +87,122 @@ export async function fetchMobileApi<T>(endpoint: string, options: RequestInit =
     }
 
     return json.data !== undefined ? json.data : json;
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error(`Connection timed out reaching ${url}.`);
+  } catch (primaryErr: any) {
+    // If primary failed (404 or connection error) and we have a local dev fallback
+    if (primaryBase !== localDevBase) {
+      try {
+        const localController = new AbortController();
+        const localTimeoutId = setTimeout(() => localController.abort(), 4000);
+
+        const localRes = await fetch(`${localDevBase}${endpoint}`, {
+          ...options,
+          signal: localController.signal,
+          headers,
+        });
+
+        clearTimeout(localTimeoutId);
+
+        const localJson = await localRes.json();
+        if (localRes.ok || localRes.status === 207) {
+          return localJson.data !== undefined ? localJson.data : localJson;
+        }
+      } catch (localErr) {
+        // Fall through to throw original error
+      }
     }
-    console.warn(`[Mobile API Warning] Failed to fetch ${url}:`, error.message);
-    throw error;
+
+    console.warn(`[Mobile API Warning] Failed to fetch ${primaryBase}${endpoint}:`, primaryErr.message);
+    throw primaryErr;
   }
 }
 
 export const MobileApiService = {
   getApiBaseUrl,
   setCustomApiHost,
+  setAuthToken,
+  getAuthToken,
 
   // Health & App Life Status
   getHealth: () => fetchMobileApi<any>('/health'),
   getHealthDetails: () => fetchMobileApi<any>('/health/details'),
 
-  // Biometrics & Goals
-  calculateBiometrics: (data: any) =>
-    fetchMobileApi<any>('/goals/calculate', {
+  // Authentication
+  registerUser: (data: {
+    fullName: string;
+    email: string;
+    password?: string;
+    gender?: string;
+    heightCm?: number;
+    weightKg?: number;
+    targetWeightKg?: number;
+    goalType?: string;
+    dietaryPreference?: string;
+    weeklyBudgetInr?: number;
+    city?: string;
+    dailyCalorieTarget?: number;
+    proteinTargetG?: number;
+    carbsTargetG?: number;
+    fatTargetG?: number;
+  }) =>
+    fetchMobileApi<{ token: string; user: any }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  // Nutrition & Kirana Optimizer
-  optimizeMealPlan: (params: {
-    dailyBudgetInr: number;
-    targetProteinG: number;
-    dietCategory: string;
-    targetCalories?: number;
+  loginUser: (data: { email: string; password?: string }) =>
+    fetchMobileApi<{ token: string; user: any }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  loginWithGoogle: (data: {
+    email: string;
+    fullName?: string;
+    avatarUrl?: string;
+    googleId?: string;
+    gender?: string;
+    heightCm?: number;
+    weightKg?: number;
+    targetWeightKg?: number;
+    goalType?: string;
+    dietaryPreference?: string;
+    weeklyBudgetInr?: number;
+    city?: string;
+    dailyCalorieTarget?: number;
+    proteinTargetG?: number;
+    carbsTargetG?: number;
+    fatTargetG?: number;
   }) =>
-    fetchMobileApi<any>('/nutrition/optimize', {
+    fetchMobileApi<{ token: string; user: any }>('/auth/google', {
       method: 'POST',
-      body: JSON.stringify(params),
+      body: JSON.stringify(data),
     }),
 
-  getKiranaList: (weeklyBudgetInr: number, dietCategory: string) =>
-    fetchMobileApi<any>('/nutrition/kirana-list', {
-      method: 'POST',
-      body: JSON.stringify({ weeklyBudgetInr, dietCategory }),
+  getMe: () => fetchMobileApi<any>('/auth/me'),
+  getProfile: () => fetchMobileApi<any>('/auth/me'),
+
+  updateProfile: (data: any) =>
+    fetchMobileApi<any>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
     }),
 
-  getFridgeJugaad: (leftovers: string[]) =>
-    fetchMobileApi<any>('/nutrition/fridge-jugaad', {
-      method: 'POST',
-      body: JSON.stringify({ leftovers }),
-    }),
+  // Weather
+  getWeatherStatus: (city: string) => fetchMobileApi<any>(`/weather/status?city=${city}`),
 
-  getFoods: (search?: string) =>
-    fetchMobileApi<any[]>(search ? `/nutrition/foods?search=${encodeURIComponent(search)}` : '/nutrition/foods'),
-
-  // Weather & AQI Dynamic Engine (supports any Indian city or GPS coordinates)
-  getWeatherStatus: (
-    params: string | { city?: string; latitude?: number; longitude?: number; baseHydrationMl?: number } = 'delhi',
-    baseHydrationMl: number = 2500
-  ) => {
-    if (typeof params === 'string') {
-      return fetchMobileApi<any>(`/weather/status?city=${encodeURIComponent(params)}&baseHydrationMl=${baseHydrationMl}`);
-    }
-    const queryParts: string[] = [];
-    if (params.city) queryParts.push(`city=${encodeURIComponent(params.city)}`);
-    if (params.latitude !== undefined) queryParts.push(`latitude=${params.latitude}`);
-    if (params.longitude !== undefined) queryParts.push(`longitude=${params.longitude}`);
-    queryParts.push(`baseHydrationMl=${params.baseHydrationMl || baseHydrationMl}`);
-    return fetchMobileApi<any>(`/weather/status?${queryParts.join('&')}`);
-  },
-
-  getCities: () => fetchMobileApi<{ key: string; name: string; state: string }[]>('/weather/cities'),
+  // Nutrition & Meal Plan
+  getMealPlan: (diet: string, budget: number) =>
+    fetchMobileApi<any>(`/nutrition/meal-plan?diet=${diet}&budget=${budget}`),
 
   // Workouts
-  getWorkouts: (noiseFreeOnly: boolean = false) =>
-    fetchMobileApi<any[]>(`/workouts?noiseFreeOnly=${noiseFreeOnly}`),
+  getWorkouts: (equipment?: string) =>
+    fetchMobileApi<any>(`/workouts${equipment ? `?equipment=${equipment}` : ''}`),
+
+  // Daily Logs
+  getDailyLogs: (date: string) => fetchMobileApi<any>(`/logs?date=${date}`),
+  logMeal: (data: any) =>
+    fetchMobileApi<any>('/logs/meal', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };

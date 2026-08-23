@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { MobileApiService, setAuthToken } from '../services/api';
+import { SafeStorage } from '../services/storage';
 
 export type DietaryType = 'veg' | 'jain' | 'eggetarian' | 'non_veg';
 export type EquipmentType = 'bodyweight' | 'bands' | 'dumbbells' | 'gym';
@@ -24,6 +26,8 @@ export interface UserProfile {
   id?: string;
   fullName: string;
   email: string;
+  avatarUrl?: string;
+  authProvider?: 'local' | 'google' | 'guest';
   gender: 'male' | 'female';
   age: number;
   weightKg: number;
@@ -52,6 +56,7 @@ interface AuthContextType {
   isGuest: boolean;
   isSuperAdmin: boolean;
   user: UserProfile;
+  authToken: string | null;
   loggedMealIds: string[];
   completedExerciseIds: string[];
   currentCaloriesLogged: number;
@@ -86,6 +91,16 @@ interface AuthContextType {
   };
 
   login: (email: string, fullName?: string) => void;
+  loginWithEmail: (email: string, password?: string) => Promise<void>;
+  loginWithGoogle: (googleData: { email: string; fullName?: string; avatarUrl?: string; googleId?: string }) => Promise<void>;
+  registerWithEmail: (data: {
+    fullName: string;
+    email: string;
+    password?: string;
+    dietaryPreference?: DietaryType;
+    weeklyBudgetInr?: number;
+    city?: string;
+  }) => Promise<void>;
   logout: () => void;
   continueAsGuest: () => void;
   startFreePlan: (initialConfig?: Partial<UserProfile>) => void;
@@ -93,6 +108,8 @@ interface AuthContextType {
   setGoal: (goal: GoalType, targetWeight?: number) => void;
   toggleMealLogged: (mealId: string, calories: number, protein: number, carbs: number, fat: number) => void;
   toggleExerciseCompleted: (exerciseId: string, caloriesBurned?: number) => void;
+  hasCompletedOnboarding: boolean;
+  setHasCompletedOnboarding: (val: boolean) => void;
   unlockSuperAdmin: (pin: string) => boolean;
   lockSuperAdmin: () => void;
 }
@@ -178,18 +195,20 @@ const getDayBeforeYesterdayStr = () => {
 
 const initialTargets = calculateRealisticTargets(72, 175, 26, 'male', 'fat_loss', 68);
 
-const defaultUser: UserProfile = {
-  fullName: 'Govind Sharma',
-  email: 'govind@mealfit.in',
+const defaultGuestUser: UserProfile = {
+  fullName: 'New Member',
+  email: '',
+  avatarUrl: undefined,
+  authProvider: 'guest',
   gender: 'male',
   age: 26,
-  weightKg: 72,
-  heightCm: 175,
-  targetWeightKg: 68,
+  weightKg: 70,
+  heightCm: 172,
+  targetWeightKg: 65,
   goalType: 'fat_loss',
   dietaryPreference: 'veg',
-  weeklyBudgetInr: 650,
-  equipment: ['bodyweight', 'dumbbells'],
+  weeklyBudgetInr: 800,
+  equipment: ['bodyweight'],
   city: 'delhi',
   dailyCalorieTarget: initialTargets.dailyCalorieTarget,
   proteinTargetG: initialTargets.proteinTargetG,
@@ -234,115 +253,14 @@ const defaultMealsHistory: LoggedMealEntry[] = [
     date: getTodayDateStr(),
     time: '01:30 PM',
   },
-
-  // Yesterday
-  {
-    id: 'entry_yest_1',
-    name: 'Sprouted Kala Chana Chaat',
-    hindiName: 'अंकुरित काला चना चाट',
-    calories: 280,
-    proteinG: 18.0,
-    carbsG: 42,
-    fatG: 4.0,
-    slot: 'breakfast',
-    quantity: '1 Medium Bowl (150g)',
-    costInr: 14,
-    date: getYesterdayDateStr(),
-    time: '08:45 AM',
-  },
-  {
-    id: 'entry_yest_2',
-    name: 'Yellow Moong Dal + 2 Multigrain Rotis + Curd',
-    hindiName: 'मूंग दाल + 2 रोटी + दही',
-    calories: 440,
-    proteinG: 26.5,
-    carbsG: 62,
-    fatG: 10.0,
-    slot: 'lunch',
-    quantity: '1 Katori Dal + 100g Curd',
-    costInr: 25,
-    date: getYesterdayDateStr(),
-    time: '01:15 PM',
-  },
-  {
-    id: 'entry_yest_3',
-    name: 'Roasted Peanuts with Black Pepper',
-    hindiName: 'भुनी मूंगफली',
-    calories: 190,
-    proteinG: 9.0,
-    carbsG: 8,
-    fatG: 14.0,
-    slot: 'evening_snack',
-    quantity: '30g Handful',
-    costInr: 8,
-    date: getYesterdayDateStr(),
-    time: '05:30 PM',
-  },
-  {
-    id: 'entry_yest_4',
-    name: 'Paneer Tikka Bhurji + 1 Phulka + Cucumber Salad',
-    hindiName: 'पनीर भुर्जी + 1 रोटी + खीरा',
-    calories: 390,
-    proteinG: 24.0,
-    carbsG: 24,
-    fatG: 22.0,
-    slot: 'dinner',
-    quantity: '100g Low Fat Paneer',
-    costInr: 45,
-    date: getYesterdayDateStr(),
-    time: '08:30 PM',
-  },
-
-  // Day Before Yesterday
-  {
-    id: 'entry_prev_1',
-    name: 'Oats in Warm Milk with Chia Seeds',
-    hindiName: 'ओट्स + दूध',
-    calories: 310,
-    proteinG: 14.0,
-    carbsG: 48,
-    fatG: 6.5,
-    slot: 'breakfast',
-    quantity: '40g Oats + 200ml Milk',
-    costInr: 20,
-    date: getDayBeforeYesterdayStr(),
-    time: '08:15 AM',
-  },
-  {
-    id: 'entry_prev_2',
-    name: 'Rajma Curry + Brown Rice + Mint Chutney',
-    hindiName: 'राजमा चावल + हरी चटनी',
-    calories: 520,
-    proteinG: 21.0,
-    carbsG: 82,
-    fatG: 11.0,
-    slot: 'lunch',
-    quantity: '1 Bowl Rajma + 1 Cup Rice',
-    costInr: 32,
-    date: getDayBeforeYesterdayStr(),
-    time: '01:45 PM',
-  },
-  {
-    id: 'entry_prev_3',
-    name: 'Soya Chunks Pulao + Kheera Raita',
-    hindiName: 'सोया पुलाव + खीरा रायता',
-    calories: 480,
-    proteinG: 32.0,
-    carbsG: 64,
-    fatG: 10.5,
-    slot: 'dinner',
-    quantity: '1 Plate Pulao',
-    costInr: 26,
-    date: getDayBeforeYesterdayStr(),
-    time: '08:45 PM',
-  },
 ];
 
 const AuthContext = createContext<AuthContextType>({
-  isLoggedIn: true,
-  isGuest: false,
+  isLoggedIn: false,
+  isGuest: true,
   isSuperAdmin: false,
-  user: defaultUser,
+  user: defaultGuestUser,
+  authToken: null,
   loggedMealIds: ['breakfast'],
   completedExerciseIds: ['ex_1'],
   currentCaloriesLogged: 680,
@@ -358,7 +276,12 @@ const AuthContext = createContext<AuthContextType>({
   getMealsForDate: () => [],
   getDayTotals: () => ({ calories: 0, protein: 0, carbs: 0, fat: 0, cost: 0 }),
 
+  hasCompletedOnboarding: false,
+  setHasCompletedOnboarding: () => {},
   login: () => {},
+  loginWithEmail: async () => {},
+  loginWithGoogle: async () => {},
+  registerWithEmail: async () => {},
   logout: () => {},
   continueAsGuest: () => {},
   startFreePlan: () => {},
@@ -371,10 +294,12 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
-  const [isGuest, setIsGuest] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isGuest, setIsGuest] = useState<boolean>(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
-  const [user, setUser] = useState<UserProfile>(defaultUser);
+  const [hasCompletedOnboarding, setHasCompletedOnboardingState] = useState<boolean>(false);
+  const [user, setUser] = useState<UserProfile>(defaultGuestUser);
+  const [authToken, setTokenState] = useState<string | null>(null);
 
   // History & Custom Meals State
   const [loggedMealsHistory, setLoggedMealsHistory] = useState<LoggedMealEntry[]>(defaultMealsHistory);
@@ -383,6 +308,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Interactive Live Tracker State for Today
   const [loggedMealIds, setLoggedMealIds] = useState<string[]>(['breakfast', 'lunch']);
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>(['ex_1', 'ex_2']);
+
+  // Load saved session on startup
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedToken = await SafeStorage.getItem('mealfit_auth_token');
+        const savedUserStr = await SafeStorage.getItem('mealfit_user_profile');
+        const savedOnboarded = await SafeStorage.getItem('mealfit_has_onboarded');
+        
+        if (savedOnboarded === 'true') {
+          setHasCompletedOnboardingState(true);
+        }
+
+        if (savedUserStr) {
+          try {
+            const parsed = JSON.parse(savedUserStr);
+            setUser((prev) => {
+              const merged = { ...prev, ...parsed };
+              // Recompute targets to ensure accuracy
+              const targets = calculateRealisticTargets(
+                merged.weightKg || 70,
+                merged.heightCm || 172,
+                merged.age || 26,
+                merged.gender || 'male',
+                merged.goalType || 'fat_loss',
+                merged.targetWeightKg || 65
+              );
+              return {
+                ...merged,
+                dailyCalorieTarget: targets.dailyCalorieTarget,
+                proteinTargetG: targets.proteinTargetG,
+                carbsTargetG: targets.carbsTargetG,
+                fatTargetG: targets.fatTargetG,
+                estimatedWeeksToGoal: targets.estimatedWeeksToGoal,
+              };
+            });
+          } catch (e) {
+            // Ignored
+          }
+        }
+
+        if (savedToken) {
+          setTokenState(savedToken);
+          setAuthToken(savedToken);
+          setIsLoggedIn(true);
+          setIsGuest(false);
+          // Background cloud sync verification
+          MobileApiService.getMe()
+            .then((cloudUser) => {
+              if (cloudUser) {
+                setUser((prev) => ({ ...prev, ...cloudUser }));
+                SafeStorage.setItem('mealfit_user_profile', JSON.stringify(cloudUser));
+              }
+            })
+            .catch(() => {
+              // Stay logged in locally with cached token & profile
+            });
+        } else {
+          setIsLoggedIn(false);
+          setIsGuest(false); // Clean unauthenticated state
+        }
+      } catch (err) {
+        console.log('Session load error', err);
+      }
+    })();
+  }, []);
+
+  const setHasCompletedOnboarding = async (val: boolean) => {
+    setHasCompletedOnboardingState(val);
+    await SafeStorage.setItem('mealfit_has_onboarded', val ? 'true' : 'false');
+  };
 
   // Compute live today totals from history
   const todayMeals = loggedMealsHistory.filter((m) => m.date === getTodayDateStr());
@@ -455,8 +451,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tw
     );
 
-    setUser((prev) => ({
-      ...prev,
+    const updated = {
       goalType: goal,
       targetWeightKg: tw,
       dailyCalorieTarget: targets.dailyCalorieTarget,
@@ -464,7 +459,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       carbsTargetG: targets.carbsTargetG,
       fatTargetG: targets.fatTargetG,
       estimatedWeeksToGoal: targets.estimatedWeeksToGoal,
+    };
+
+    setUser((prev) => ({
+      ...prev,
+      ...updated,
     }));
+    SafeStorage.setItem('mealfit_user_profile', JSON.stringify({ ...user, ...updated }));
+
+    if (authToken) {
+      MobileApiService.updateProfile(updated).catch(() => {});
+    }
   };
 
   const login = (email: string, fullName?: string) => {
@@ -480,15 +485,193 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsGuest(false);
   };
 
+  const loginWithEmail = async (email: string, password?: string) => {
+    try {
+      const res = await MobileApiService.loginUser({ email, password });
+      if (res?.token) {
+        setTokenState(res.token);
+        setAuthToken(res.token);
+        await SafeStorage.setItem('mealfit_auth_token', res.token);
+      }
+      if (res?.user) {
+        const u = res.user;
+        const updated: Partial<UserProfile> = {
+          id: u.id,
+          fullName: u.fullName || user.fullName,
+          email: u.email,
+          gender: u.gender || user.gender,
+          age: u.age || user.age,
+          heightCm: u.heightCm || user.heightCm,
+          weightKg: u.weightKg || user.weightKg,
+          targetWeightKg: u.targetWeightKg || user.targetWeightKg,
+          goalType: u.goalType || user.goalType,
+          city: u.city || user.city,
+          dietaryPreference: u.dietaryPreference || user.dietaryPreference,
+          weeklyBudgetInr: u.weeklyBudgetInr || user.weeklyBudgetInr,
+          authProvider: 'local',
+        };
+        setUser((prev) => ({ ...prev, ...updated }));
+        await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+        
+        // Sync local stats to cloud
+        if (res?.token) {
+          MobileApiService.updateProfile(updated).catch(() => {});
+        }
+      }
+      setIsLoggedIn(true);
+      setIsGuest(false);
+      setHasCompletedOnboarding(true);
+    } catch (err: any) {
+      // Offline fallback
+      login(email);
+      setHasCompletedOnboarding(true);
+    }
+  };
+
+  const loginWithGoogle = async (googleData: { email: string; fullName?: string; avatarUrl?: string; googleId?: string }) => {
+    try {
+      const res = await MobileApiService.loginWithGoogle({
+        email: googleData.email,
+        fullName: googleData.fullName || user.fullName,
+        avatarUrl: googleData.avatarUrl,
+        googleId: googleData.googleId,
+        gender: user.gender,
+        heightCm: user.heightCm,
+        weightKg: user.weightKg,
+        targetWeightKg: user.targetWeightKg,
+        goalType: user.goalType,
+        dietaryPreference: user.dietaryPreference,
+        weeklyBudgetInr: user.weeklyBudgetInr,
+        city: user.city,
+        dailyCalorieTarget: user.dailyCalorieTarget,
+        proteinTargetG: user.proteinTargetG,
+        carbsTargetG: user.carbsTargetG,
+        fatTargetG: user.fatTargetG,
+      });
+
+      if (res?.token) {
+        setTokenState(res.token);
+        setAuthToken(res.token);
+        await SafeStorage.setItem('mealfit_auth_token', res.token);
+      }
+      if (res?.user) {
+        const u = res.user;
+        const updated: Partial<UserProfile> = {
+          id: u.id,
+          fullName: u.fullName || googleData.fullName || user.fullName,
+          email: u.email || googleData.email,
+          avatarUrl: u.avatarUrl || googleData.avatarUrl,
+          gender: u.gender || user.gender,
+          age: u.age || user.age,
+          heightCm: u.heightCm || user.heightCm,
+          weightKg: u.weightKg || user.weightKg,
+          targetWeightKg: u.targetWeightKg || user.targetWeightKg,
+          goalType: u.goalType || user.goalType,
+          city: u.city || user.city,
+          dietaryPreference: u.dietaryPreference || user.dietaryPreference,
+          weeklyBudgetInr: u.weeklyBudgetInr || user.weeklyBudgetInr,
+          authProvider: 'google',
+        };
+        setUser((prev) => ({ ...prev, ...updated }));
+        await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+        
+        // Sync local stats to cloud
+        if (res?.token) {
+          MobileApiService.updateProfile(updated).catch(() => {});
+        }
+      }
+      setIsLoggedIn(true);
+      setIsGuest(false);
+      setHasCompletedOnboarding(true);
+    } catch (err) {
+      // Offline fallback
+      login(googleData.email, googleData.fullName);
+      if (googleData.avatarUrl) {
+        setUser((prev) => ({ ...prev, avatarUrl: googleData.avatarUrl, authProvider: 'google' }));
+      }
+      setHasCompletedOnboarding(true);
+    }
+  };
+
+  const registerWithEmail = async (data: {
+    fullName: string;
+    email: string;
+    password?: string;
+    dietaryPreference?: DietaryType;
+    weeklyBudgetInr?: number;
+    city?: string;
+  }) => {
+    try {
+      const res = await MobileApiService.registerUser({
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        gender: user.gender,
+        heightCm: user.heightCm,
+        weightKg: user.weightKg,
+        targetWeightKg: user.targetWeightKg,
+        goalType: user.goalType,
+        dietaryPreference: data.dietaryPreference || user.dietaryPreference,
+        weeklyBudgetInr: data.weeklyBudgetInr || user.weeklyBudgetInr,
+        city: data.city || user.city,
+        dailyCalorieTarget: user.dailyCalorieTarget,
+        proteinTargetG: user.proteinTargetG,
+        carbsTargetG: user.carbsTargetG,
+        fatTargetG: user.fatTargetG,
+      });
+      if (res?.token) {
+        setTokenState(res.token);
+        setAuthToken(res.token);
+        await SafeStorage.setItem('mealfit_auth_token', res.token);
+      }
+      if (res?.user) {
+        const u = res.user;
+        const updated: Partial<UserProfile> = {
+          id: u.id,
+          fullName: u.fullName,
+          email: u.email,
+          gender: user.gender,
+          age: user.age,
+          heightCm: user.heightCm,
+          weightKg: user.weightKg,
+          targetWeightKg: user.targetWeightKg,
+          dietaryPreference: (u.dietaryPreference as any) || data.dietaryPreference || user.dietaryPreference,
+          weeklyBudgetInr: u.weeklyBudgetInr || data.weeklyBudgetInr || user.weeklyBudgetInr,
+          city: u.city || data.city || user.city,
+          authProvider: 'local',
+        };
+        setUser((prev) => ({ ...prev, ...updated }));
+        await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+      }
+      setIsLoggedIn(true);
+      setIsGuest(false);
+      setHasCompletedOnboarding(true);
+    } catch (err: any) {
+      login(data.email, data.fullName);
+      setHasCompletedOnboarding(true);
+    }
+  };
+
   const logout = () => {
     setIsLoggedIn(false);
-    setIsGuest(true);
+    setIsGuest(false);
     setIsSuperAdmin(false);
+    setTokenState(null);
+    setAuthToken(null);
+    setUser(defaultGuestUser);
+    setLoggedMealIds([]);
+    setCompletedExerciseIds([]);
+    setLoggedMealsHistory([]);
+    SafeStorage.removeItem('mealfit_auth_token');
+    SafeStorage.removeItem('mealfit_user_profile');
+    SafeStorage.removeItem('mealfit_meals_history');
+    SafeStorage.removeItem('mealfit_logged_meals');
+    SafeStorage.removeItem('mealfit_completed_exercises');
   };
 
   const continueAsGuest = () => {
     setIsLoggedIn(false);
-    setIsGuest(true);
+    setIsGuest(false);
   };
 
   const startFreePlan = (initialConfig?: Partial<UserProfile>) => {
@@ -504,17 +687,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       tw
     );
 
-    setUser((prev) => ({
-      ...prev,
+    const updated = {
       ...initialConfig,
       dailyCalorieTarget: targets.dailyCalorieTarget,
       proteinTargetG: targets.proteinTargetG,
       carbsTargetG: targets.carbsTargetG,
       fatTargetG: targets.fatTargetG,
       estimatedWeeksToGoal: targets.estimatedWeeksToGoal,
+    };
+
+    setUser((prev) => ({
+      ...prev,
+      ...updated,
     }));
-    setIsLoggedIn(true);
+    
+    // User is in unauthenticated preview mode waiting for signup / login
+    setIsLoggedIn(false);
     setIsGuest(false);
+    setHasCompletedOnboarding(true);
+
+    SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+
+    if (authToken) {
+      MobileApiService.updateProfile(updated).catch(() => {});
+    }
   };
 
   const updateUserProfile = (profile: Partial<UserProfile>) => {
@@ -542,8 +738,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updated.fatTargetG = targets.fatTargetG;
         updated.estimatedWeeksToGoal = targets.estimatedWeeksToGoal;
       }
+      SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
       return updated;
     });
+
+    if (authToken) {
+      MobileApiService.updateProfile(profile).catch(() => {});
+    }
   };
 
   const toggleMealLogged = (
@@ -605,6 +806,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isGuest,
         isSuperAdmin,
         user,
+        authToken,
         loggedMealIds,
         completedExerciseIds,
         currentCaloriesLogged,
@@ -619,6 +821,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getMealsForDate,
         getDayTotals,
         login,
+        loginWithEmail,
+        loginWithGoogle,
+        registerWithEmail,
         logout,
         continueAsGuest,
         startFreePlan,
@@ -626,6 +831,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setGoal,
         toggleMealLogged,
         toggleExerciseCompleted,
+        hasCompletedOnboarding,
+        setHasCompletedOnboarding,
         unlockSuperAdmin,
         lockSuperAdmin,
       }}

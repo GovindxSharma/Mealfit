@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet } from 'react-native';
-import { LifeStatusBadge } from '../src/components/LifeStatusBadge';
+import { DraggableLivePill } from '../src/components/DraggableLivePill';
+import { AnimatedSplashScreen } from '../src/components/AnimatedSplashScreen';
 import { NotificationBanner } from '../src/components/NotificationBanner';
 import { AuthProvider } from '../src/context/AuthContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
@@ -11,13 +12,20 @@ import { Flame } from 'lucide-react-native';
 
 function LayoutNavigation() {
   const { theme } = useTheme();
+  const [splashFinished, setSplashFinished] = useState<boolean>(false);
 
   return (
     <>
       <StatusBar style={theme.isDark ? 'light' : 'dark'} backgroundColor={theme.background} />
       <NotificationBanner />
+
+      {!splashFinished && (
+        <AnimatedSplashScreen onFinish={() => setSplashFinished(true)} />
+      )}
+
       <Stack
         screenOptions={{
+          headerShown: false,
           headerStyle: {
             backgroundColor: theme.background,
           },
@@ -34,39 +42,13 @@ function LayoutNavigation() {
         <Stack.Screen
           name="(tabs)"
           options={{
-            headerTitle: () => (
-              <View style={styles.headerTitleRow}>
-                <View style={[styles.logoBadge, { backgroundColor: theme.primaryLight, borderColor: theme.primaryGlow }]}>
-                  <Flame size={16} color={theme.primary} />
-                </View>
-                <View>
-                  <View style={styles.brandRow}>
-                    <Text style={[styles.brandName, { color: theme.textPrimary }]}>MealFit</Text>
-                    <View style={[styles.indiaBadge, { backgroundColor: theme.amberLight, borderColor: theme.amberGlow }]}>
-                      <Text style={[styles.indiaText, { color: theme.amber }]}>INDIA</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            ),
-            headerRight: () => <LifeStatusBadge />,
-          }}
-        />
-        <Stack.Screen
-          name="onboarding/biometrics"
-          options={{
-            title: 'Your Biometrics',
-            presentation: 'card',
-          }}
-        />
-        <Stack.Screen
-          name="onboarding/goal-budget"
-          options={{
-            title: 'Goal & Kirana Budget',
-            presentation: 'card',
+            headerShown: false,
           }}
         />
       </Stack>
+
+      {/* Draggable Live Backend Status Pill - can be dragged and placed anywhere */}
+      <DraggableLivePill />
     </>
   );
 }

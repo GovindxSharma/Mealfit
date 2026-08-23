@@ -260,11 +260,11 @@ export const LifeStatusModal: React.FC<LifeStatusModalProps> = ({ visible, onClo
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     padding: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: '#F1F5F9',
     borderRadius: 8,
   },
   closeButton: {
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: '#F8FAFC',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -354,10 +354,10 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     padding: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderColor: 'rgba(239, 68, 68, 0.2)',
     marginBottom: 16,
     gap: 6,
   },
@@ -368,14 +368,14 @@ const styles = StyleSheet.create({
   },
   errorSubtitle: {
     fontSize: 11,
-    color: '#FCA5A5',
+    color: '#DC2626',
   },
   errorTip: {
     fontSize: 10,
     color: Colors.textMuted,
   },
   retryBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: Colors.primaryLight,
     paddingVertical: 8,
     alignItems: 'center',
     borderRadius: 8,
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   retryBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.textPrimary,
+    color: Colors.primary,
   },
   scrollContent: {
     marginBottom: 16,
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   sectionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: Colors.card,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -479,8 +479,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
   },
   moduleName: {
     fontSize: 12,

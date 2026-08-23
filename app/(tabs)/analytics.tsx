@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
+import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import {
   TrendingUp,
   Award,
@@ -18,16 +21,24 @@ import {
   Sparkles,
   Zap,
   Check,
+  Lock,
 } from 'lucide-react-native';
 
 export default function AnalyticsScreen() {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
+  const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
+  const insets = useSafeAreaInsets();
+  const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
 
   const weeklyDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const habitStreak = [true, true, true, true, true, false, true];
 
   const handleExportPdf = () => {
+    if (!isLoggedIn) {
+      setShowAuthGate(true);
+      return;
+    }
     Alert.alert(
       'Export Progress Report',
       'Monthly MealFit Report generated: 4.2 kg weight progress, 94g avg protein/day, and ₹3,420 saved on Kirana groceries!'
@@ -37,9 +48,32 @@ export default function AnalyticsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingTop: topSafeDistance }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Unauthenticated Cloud Sync Banner */}
+        {!isLoggedIn && (
+          <TouchableOpacity
+            onPress={() => setShowAuthGate(true)}
+            style={[styles.lockedBanner, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.lockedIconCircle, { backgroundColor: theme.primary }]}>
+              <Lock size={15} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.lockedBannerTitle, { color: theme.textPrimary }]}>
+                Cloud Progression Sync Locked
+              </Text>
+              <Text style={[styles.lockedBannerDesc, { color: theme.textSecondary }]}>
+                Sign in with Google or Email to securely backup your weight progression and monthly savings reports.
+              </Text>
+            </View>
+            <View style={[styles.unlockPill, { backgroundColor: theme.primary }]}>
+              <Text style={styles.unlockPillText}>Sign In</Text>
+            </View>
+          </TouchableOpacity>
+        )}
         {/* 1. Habit Streak & Adherence */}
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.cardHeader}>
@@ -163,6 +197,14 @@ export default function AnalyticsScreen() {
           <Text style={[styles.exportBtnText, { color: theme.textPrimary }]}>Export Monthly Progress PDF</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Auth Gate Modal */}
+      <AuthRequiredModal
+        visible={showAuthGate}
+        onClose={() => setShowAuthGate(false)}
+        title="Sync Cloud Analytics"
+        subtitle="Sign in with Google or Email to unlock 30-day weight progression curves and PDF export reports."
+      />
     </View>
   );
 }
@@ -170,6 +212,40 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  lockedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+    marginBottom: 6,
+  },
+  lockedIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockedBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  lockedBannerDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  unlockPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  unlockPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   contentContainer: {
     padding: 16,

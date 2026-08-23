@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,15 @@ import {
   TouchableOpacity,
   TextInput,
   Switch,
+  Alert,
+  Platform,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, DietaryType, EquipmentType } from '../context/AuthContext';
 import { NotificationService } from '../services/notificationService';
+import { promptGoogleSignIn } from '../services/googleAuth';
+import { GoogleQuickAuthModal } from './GoogleQuickAuthModal';
+import { useRouter } from 'expo-router';
 import {
   X,
   User,
@@ -26,7 +31,13 @@ import {
   Activity,
   Lock,
   Palette,
+  ShieldCheck,
+  Key,
+  LogIn,
+  Leaf,
+  Egg,
 } from 'lucide-react-native';
+import { SecurityVaultModal } from './SecurityVaultModal';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -44,7 +55,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenThemeModal,
 }) => {
   const { theme } = useTheme();
-  const { user, updateUserProfile, logout } = useAuth();
+  const { user, isLoggedIn, updateUserProfile, logout, loginWithGoogle } = useAuth();
+  const router = useRouter();
 
   const [name, setName] = useState(user.fullName);
   const [email, setEmail] = useState(user.email);
@@ -55,6 +67,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [waterNotif, setWaterNotif] = useState(user.notifications.water);
   const [mealNotif, setMealNotif] = useState(user.notifications.meals);
   const [workoutNotif, setWorkoutNotif] = useState(user.notifications.workouts);
+  const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
+  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
+  const [showGoogleQuickModal, setShowGoogleQuickModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    setName(user.fullName);
+    setEmail(user.email);
+    setDiet(user.dietaryPreference);
+    setBudget(user.weeklyBudgetInr);
+    setEquipment(user.equipment);
+    setCity(user.city);
+    setWaterNotif(user.notifications.water);
+    setMealNotif(user.notifications.meals);
+    setWorkoutNotif(user.notifications.workouts);
+  }, [user]);
+
+  const handleGoogleDirectSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      const googleUser = await promptGoogleSignIn();
+      await loginWithGoogle(googleUser);
+    } catch (err: any) {
+      if (Platform.OS !== 'web') {
+        setShowGoogleQuickModal(true);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const toggleEquipment = (item: EquipmentType) => {
     if (equipment.includes(item)) {
@@ -83,6 +124,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose();
   };
 
+  const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      const confirmed = typeof window !== 'undefined' ? window.confirm('Are you sure you want to log out of your MealFit account?') : true;
+      if (confirmed) {
+        logout();
+        onClose();
+      }
+      return;
+    }
+
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of your MealFit account? Your data is securely saved in the cloud.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: () => {
+            logout();
+            onClose();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
@@ -100,7 +168,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </View>
               <View>
                 <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Settings & Profile</Text>
-                <Text style={[styles.headerSub, { color: theme.textSecondary }]}>Personalized preferences & account</Text>
+                <Text style={[styles.headerSub, { color: theme.textSecondary }]}>
+                  {!isLoggedIn ? 'Waiting for Sign In • Local Storage' : `${user.authProvider === 'google' ? 'Google Account' : 'Verified Member'} • Cloud Synced`}
+                </Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -109,7 +179,68 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* 1. Account Details */}
+            {/* Account Status Card */}
+            <View
+              style={[
+                styles.accountCard,
+                {
+                  backgroundColor: !isLoggedIn ? theme.amberLight : theme.primaryLight,
+                  borderColor: !isLoggedIn ? theme.amber : theme.primary,
+                },
+              ]}
+            >
+              <View style={styles.accountCardLeft}>
+                <View style={[styles.accountIconCircle, { backgroundColor: theme.card }]}>
+                  {user.authProvider === 'google' ? (
+                    <Text style={styles.googleMiniG}>G</Text>
+                  ) : (
+                    <User size={16} color={theme.primary} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.accountCardName, { color: theme.textPrimary }]}>
+                    {!isLoggedIn ? (user.fullName && user.fullName !== 'New Member' ? user.fullName : 'Guest Seeker') : user.fullName}
+                  </Text>
+                  <Text style={[styles.accountCardEmail, { color: theme.textSecondary }]}>
+                    {!isLoggedIn ? 'Not signed in yet' : user.email}
+                  </Text>
+                </View>
+              </View>
+              {!isLoggedIn ? (
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    onPress={handleGoogleDirectSignIn}
+                    style={[styles.accountActionBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: theme.cardBorder }]}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.googleMiniG}>G</Text>
+                    <Text style={[styles.accountActionText, { color: theme.textPrimary }]}>
+                      Google
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      onClose();
+                      router.push('/auth/login' as any);
+                    }}
+                    style={[styles.accountActionBtn, { backgroundColor: theme.primary }]}
+                    activeOpacity={0.8}
+                  >
+                    <LogIn size={13} color="#FFFFFF" />
+                    <Text style={[styles.accountActionText, { color: '#FFFFFF' }]}>
+                      Sign In
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={[styles.verifiedPill, { backgroundColor: theme.card }]}>
+                  <ShieldCheck size={12} color={theme.primary} />
+                  <Text style={[styles.verifiedText, { color: theme.primary }]}>Synced</Text>
+                </View>
+              )}
+            </View>
+
+            {/* 1. Account Details Form */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>ACCOUNT DETAILS</Text>
               <View style={styles.inputGroup}>
@@ -147,38 +278,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             {/* 2. Dietary Preference */}
             <View style={styles.section}>
-              <View style={styles.sectionHeaderRow}>
-                <Utensils size={15} color={theme.primary} />
-                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>DIETARY PREFERENCE</Text>
-              </View>
-              <View style={styles.pillRow}>
+              <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>DIETARY PREFERENCE</Text>
+              <View style={styles.pillRowWrap}>
                 {[
-                  { key: 'veg', label: 'Vegetarian' },
-                  { key: 'jain', label: 'Jain (No Root)' },
-                  { key: 'eggetarian', label: 'Eggetarian' },
-                  { key: 'non_veg', label: 'Non-Veg' },
-                ].map((d) => (
-                  <TouchableOpacity
-                    key={d.key}
-                    onPress={() => setDiet(d.key as DietaryType)}
-                    style={[
-                      styles.dietPill,
-                      {
-                        backgroundColor: diet === d.key ? theme.primary : 'rgba(255, 255, 255, 0.03)',
-                        borderColor: diet === d.key ? theme.primary : theme.cardBorder,
-                      },
-                    ]}
-                  >
-                    <Text
+                  { key: 'veg', label: 'Pure Veg', icon: Leaf },
+                  { key: 'jain', label: 'Jain', icon: Sparkles },
+                  { key: 'eggetarian', label: 'Eggetarian', icon: Egg },
+                  { key: 'non_veg', label: 'Non-Veg', icon: Utensils },
+                ].map((d) => {
+                  const DietIcon = d.icon;
+                  return (
+                    <TouchableOpacity
+                      key={d.key}
+                      onPress={() => setDiet(d.key as DietaryType)}
                       style={[
-                        styles.dietPillText,
-                        { color: diet === d.key ? (theme.isDark ? '#000000' : '#FFFFFF') : theme.textSecondary },
+                        styles.dietPill,
+                        {
+                          backgroundColor: diet === d.key ? theme.primaryLight : 'rgba(255, 255, 255, 0.03)',
+                          borderColor: diet === d.key ? theme.primary : theme.cardBorder,
+                        },
                       ]}
                     >
-                      {d.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <DietIcon size={13} color={diet === d.key ? theme.primary : theme.textSecondary} />
+                      <Text
+                        style={[
+                          styles.dietText,
+                          { color: diet === d.key ? theme.primary : theme.textSecondary },
+                        ]}
+                      >
+                        {d.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
@@ -187,31 +319,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <View style={styles.sectionHeaderRow}>
                 <IndianRupee size={15} color={theme.amber} />
                 <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>WEEKLY GROCERY BUDGET</Text>
+                <Text style={[styles.budgetLabel, { color: theme.amber }]}>₹{budget}/week</Text>
               </View>
-              <View style={styles.pillRow}>
-                {[
-                  { amount: 450, label: '₹450 / wk (~₹65/day)' },
-                  { amount: 650, label: '₹650 / wk (~₹90/day)' },
-                  { amount: 900, label: '₹900 / wk (~₹130/day)' },
-                ].map((b) => (
+              <View style={styles.pillRowWrap}>
+                {[500, 650, 800, 1000, 1500, 2000].map((b) => (
                   <TouchableOpacity
-                    key={b.amount}
-                    onPress={() => setBudget(b.amount)}
+                    key={b}
+                    onPress={() => setBudget(b)}
                     style={[
                       styles.budgetPill,
                       {
-                        backgroundColor: budget === b.amount ? theme.primary : 'rgba(255, 255, 255, 0.03)',
-                        borderColor: budget === b.amount ? theme.primary : theme.cardBorder,
+                        backgroundColor: budget === b ? theme.amberLight : 'rgba(255, 255, 255, 0.03)',
+                        borderColor: budget === b ? theme.amber : theme.cardBorder,
                       },
                     ]}
                   >
                     <Text
                       style={[
                         styles.budgetPillText,
-                        { color: budget === b.amount ? (theme.isDark ? '#000000' : '#FFFFFF') : theme.textSecondary },
+                        { color: budget === b ? theme.amber : theme.textSecondary },
                       ]}
                     >
-                      {b.label}
+                      ₹{b}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -222,15 +351,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <Dumbbell size={15} color={theme.indigo} />
-                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>AVAILABLE EQUIPMENT</Text>
+                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>HOME EQUIPMENT</Text>
               </View>
               <View style={styles.pillRowWrap}>
                 {[
-                  { key: 'bodyweight', label: 'Bodyweight Floor' },
-                  { key: 'dumbbells', label: 'Dumbbells / Water Bottles' },
+                  { key: 'bodyweight', label: 'Bodyweight Only' },
+                  { key: 'dumbbells', label: 'Dumbbells' },
                   { key: 'bands', label: 'Resistance Bands' },
+                  { key: 'gym', label: 'Full Gym' },
                 ].map((eq) => {
-                  const isSelected = equipment.includes(eq.key as EquipmentType);
+                  const active = equipment.includes(eq.key as EquipmentType);
                   return (
                     <TouchableOpacity
                       key={eq.key}
@@ -238,16 +368,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       style={[
                         styles.equipPill,
                         {
-                          backgroundColor: isSelected ? theme.primaryLight : 'rgba(255, 255, 255, 0.03)',
-                          borderColor: isSelected ? theme.primary : theme.cardBorder,
+                          backgroundColor: active ? theme.indigoLight : 'rgba(255, 255, 255, 0.03)',
+                          borderColor: active ? theme.indigo : theme.cardBorder,
                         },
                       ]}
                     >
-                      {isSelected && <Check size={12} color={theme.primary} />}
+                      {active && <Check size={12} color={theme.indigo} />}
                       <Text
                         style={[
                           styles.equipPillText,
-                          { color: isSelected ? theme.primary : theme.textSecondary },
+                          { color: active ? theme.indigo : theme.textSecondary },
                         ]}
                       >
                         {eq.label}
@@ -286,50 +416,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <Bell size={15} color={theme.rose} />
-                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>SMART REMINDERS</Text>
+                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>NOTIFICATION REMINDERS</Text>
               </View>
               <View style={styles.toggleRow}>
                 <View style={styles.toggleTextCol}>
                   <Text style={[styles.toggleTitle, { color: theme.textPrimary }]}>Hydration Reminders</Text>
-                  <Text style={[styles.toggleSub, { color: theme.textSecondary }]}>Dynamic weather scaling</Text>
+                  <Text style={[styles.toggleSub, { color: theme.textMuted }]}>Hourly water intake nudges</Text>
                 </View>
                 <Switch
                   value={waterNotif}
                   onValueChange={setWaterNotif}
-                  trackColor={{ false: '#262626', true: theme.primary }}
+                  trackColor={{ false: theme.cardBorder, true: theme.cyan }}
+                  thumbColor="#FFFFFF"
                 />
               </View>
               <View style={styles.toggleRow}>
                 <View style={styles.toggleTextCol}>
-                  <Text style={[styles.toggleTitle, { color: theme.textPrimary }]}>Meal Logging Prompt</Text>
-                  <Text style={[styles.toggleSub, { color: theme.textSecondary }]}>Post-meal Katori nudge</Text>
+                  <Text style={[styles.toggleTitle, { color: theme.textPrimary }]}>Indian Meal Timings</Text>
+                  <Text style={[styles.toggleSub, { color: theme.textMuted }]}>Breakfast, Lunch & Dinner reminders</Text>
                 </View>
                 <Switch
                   value={mealNotif}
                   onValueChange={setMealNotif}
-                  trackColor={{ false: '#262626', true: theme.primary }}
+                  trackColor={{ false: theme.cardBorder, true: theme.primary }}
+                  thumbColor="#FFFFFF"
                 />
               </View>
-
-              {/* Test Notification Action */}
-              <TouchableOpacity
-                onPress={async () => {
-                  await NotificationService.sendInstantNotification(
-                    '💧 MealFit Hydration & Macro Check',
-                    'Test Notification Successful! Your daily goal is active (130g Protein • 1,618 kcal).'
-                  );
-                }}
-                style={[styles.testNotifBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
-                activeOpacity={0.75}
-              >
-                <Bell size={15} color={theme.primary} />
-                <Text style={[styles.testNotifText, { color: theme.primary }]}>
-                  Send Test Push Notification to My Mobile
-                </Text>
-              </TouchableOpacity>
             </View>
 
-            {/* Theme, Diagnostics & Super Admin Links */}
+            {/* 7. Security & Encryption Badge */}
+            <TouchableOpacity
+              onPress={() => setShowSecurityModal(true)}
+              style={[
+                styles.securityCard,
+                { backgroundColor: theme.backgroundSecondary, borderColor: theme.primary },
+              ]}
+              activeOpacity={0.8}
+            >
+              <View style={styles.securityTitleRow}>
+                <Key size={14} color={theme.primary} />
+                <Text style={[styles.securityTitle, { color: theme.textPrimary }]}>
+                  256-Bit Data & Privacy Protection
+                </Text>
+                <View style={[styles.verifiedPill, { backgroundColor: theme.primaryLight, marginLeft: 'auto' }]}>
+                  <Text style={[styles.verifiedText, { color: theme.primary }]}>View Vault</Text>
+                </View>
+              </View>
+              <Text style={[styles.securityDesc, { color: theme.textMuted }]}>
+                Your biometrics, credentials, and meal logs are protected with TLS 1.3, bcrypt, and JWT encryption. Tap to inspect security vault.
+              </Text>
+            </TouchableOpacity>
+
+            {/* Diagnostics & Links */}
             <View style={styles.adminLinksRow}>
               {onOpenThemeModal && (
                 <TouchableOpacity
@@ -341,7 +479,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   activeOpacity={0.7}
                 >
                   <Palette size={15} color={theme.primary} />
-                  <Text style={[styles.diagBtnText, { color: theme.primary }]}>Theme & Colors</Text>
+                  <Text style={[styles.diagBtnText, { color: theme.primary }]}>Theme</Text>
                 </TouchableOpacity>
               )}
 
@@ -355,7 +493,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   activeOpacity={0.7}
                 >
                   <Activity size={15} color={theme.cyan} />
-                  <Text style={[styles.diagBtnText, { color: theme.cyan }]}>API Life Status</Text>
+                  <Text style={[styles.diagBtnText, { color: theme.cyan }]}>Backend</Text>
                 </TouchableOpacity>
               )}
 
@@ -369,7 +507,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   activeOpacity={0.7}
                 >
                   <Lock size={15} color={theme.indigo} />
-                  <Text style={[styles.superAdminBtnText, { color: theme.indigo }]}>Super Admin</Text>
+                  <Text style={[styles.superAdminBtnText, { color: theme.indigo }]}>Admin</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -385,21 +523,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </Text>
             </TouchableOpacity>
 
-            {/* Logout */}
+            {/* Logout / Switch Account */}
             <TouchableOpacity
               onPress={() => {
-                logout();
-                onClose();
+                if (!isLoggedIn) {
+                  onClose();
+                  router.push('/auth/login' as any);
+                } else {
+                  handleLogout();
+                }
               }}
               style={[styles.logoutBtn, { borderColor: theme.cardBorder }]}
               activeOpacity={0.7}
             >
-              <LogOut size={15} color={theme.rose} />
-              <Text style={[styles.logoutBtnText, { color: theme.rose }]}>Log Out of Account</Text>
+              <LogOut size={15} color={!isLoggedIn ? theme.primary : theme.rose} />
+              <Text style={[styles.logoutBtnText, { color: !isLoggedIn ? theme.primary : theme.rose }]}>
+                {!isLoggedIn ? 'Sign In or Create Account' : 'Log Out of Account'}
+              </Text>
             </TouchableOpacity>
+
+            {/* Play Store App Info Footer */}
+            <View style={styles.footerInfo}>
+              <Text style={[styles.footerText, { color: theme.textMuted }]}>
+                MealFit India • Version 1.0.0 (Play Store Production Edition)
+              </Text>
+            </View>
           </ScrollView>
         </View>
       </View>
+      <SecurityVaultModal
+        visible={showSecurityModal}
+        onClose={() => setShowSecurityModal(false)}
+      />
+      <GoogleQuickAuthModal
+        visible={showGoogleQuickModal}
+        onClose={() => setShowGoogleQuickModal(false)}
+        onSuccess={() => setShowGoogleQuickModal(false)}
+        initialEmail={email}
+      />
     </Modal>
   );
 };
@@ -407,7 +568,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
@@ -449,15 +610,68 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingVertical: 16,
-    gap: 18,
-    paddingBottom: 40,
+    gap: 16,
+    paddingBottom: 36,
   },
-  section: {
+  accountCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
     gap: 10,
   },
-  sectionHeaderRow: {
+  accountCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  accountIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleMiniG: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#4285F4',
+  },
+  accountCardName: {
+    fontSize: 13.5,
+    fontWeight: '800',
+  },
+  accountCardEmail: {
+    fontSize: 11,
+  },
+  accountActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  accountActionText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  verifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  verifiedText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  section: {
     gap: 8,
   },
   sectionTitle: {
@@ -465,23 +679,30 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  budgetLabel: {
+    marginLeft: 'auto',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   inputGroup: {
     gap: 4,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '600',
   },
   input: {
-    borderRadius: 12,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 13,
-  },
-  pillRow: {
-    flexDirection: 'row',
-    gap: 8,
+    fontSize: 13.5,
+    fontWeight: '600',
   },
   pillRowWrap: {
     flexDirection: 'row',
@@ -489,25 +710,28 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dietPill: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    alignItems: 'center',
   },
-  dietPillText: {
-    fontSize: 11,
+  dietText: {
+    fontSize: 11.5,
     fontWeight: '700',
   },
   budgetPill: {
     flex: 1,
+    minWidth: '28%',
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
   },
   budgetPillText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
   },
   equipPill: {
@@ -520,16 +744,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   equipPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  cityPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  cityText: {
     fontSize: 11,
     fontWeight: '700',
   },
@@ -549,19 +763,24 @@ const styles = StyleSheet.create({
   toggleSub: {
     fontSize: 11,
   },
-  testNotifBtn: {
+  securityCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
+  },
+  securityTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginTop: 6,
+    gap: 6,
   },
-  testNotifText: {
+  securityTitle: {
     fontSize: 11.5,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  securityDesc: {
+    fontSize: 10.5,
+    lineHeight: 14,
   },
   adminLinksRow: {
     flexDirection: 'row',
@@ -599,7 +818,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   saveBtnText: {
     fontSize: 13,
@@ -617,5 +836,13 @@ const styles = StyleSheet.create({
   logoutBtnText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  footerInfo: {
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  footerText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

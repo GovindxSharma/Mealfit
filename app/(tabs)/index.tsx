@@ -6,7 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MobileApiService } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -18,6 +20,8 @@ import { PersonalTrainerModal } from '../../src/components/PersonalTrainerModal'
 import { ThemeSelectorModal } from '../../src/components/ThemeSelectorModal';
 import { CustomMealModal } from '../../src/components/CustomMealModal';
 import { LocationModal } from '../../src/components/LocationModal';
+import { SecurityVaultModal } from '../../src/components/SecurityVaultModal';
+import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import { NotificationService } from '../../src/services/notificationService';
 import { useRouter } from 'expo-router';
 import {
@@ -39,12 +43,15 @@ import {
   Bot,
   Zap,
   Palette,
+  ShieldCheck,
+  Lock,
 } from 'lucide-react-native';
 
 export default function HomeScreen() {
   const {
     isLoggedIn,
     isGuest,
+    hasCompletedOnboarding,
     user,
     currentCaloriesLogged,
     currentProteinLogged,
@@ -55,6 +62,8 @@ export default function HomeScreen() {
 
   const { theme } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
 
   const [weather, setWeather] = useState<any>(null);
   const [loadingWeather, setLoadingWeather] = useState<boolean>(true);
@@ -67,6 +76,8 @@ export default function HomeScreen() {
   const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
   const [showCustomMealModal, setShowCustomMealModal] = useState<boolean>(false);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
+  const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
+  const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
 
   // Volumetric logger state
   const [katoriCount, setKatoriCount] = useState<number>(2);
@@ -87,6 +98,16 @@ export default function HomeScreen() {
     loadWeatherData(selectedCity);
     NotificationService.requestPermissions();
   }, [selectedCity]);
+
+  useEffect(() => {
+    // Prompt onboarding questionnaire immediately if not completed yet
+    if (!hasCompletedOnboarding) {
+      const timer = setTimeout(() => {
+        setShowPlanWizard(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [hasCompletedOnboarding]);
 
   const loadWeatherData = async (city: string) => {
     setLoadingWeather(true);
@@ -115,6 +136,10 @@ export default function HomeScreen() {
   const loggedMealProtein = katoriCount * 8.5 + rotiCount * 2.6;
 
   const handleQuickAddMeal = () => {
+    if (!isLoggedIn) {
+      setShowAuthGate(true);
+      return;
+    }
     toggleMealLogged(
       `quick_meal_${Date.now()}`,
       loggedMealCalories,
@@ -122,6 +147,14 @@ export default function HomeScreen() {
       rotiCount * 15 + katoriCount * 18,
       (hasDesiGhee ? rotiCount * 5 : 0) + katoriCount * 3
     );
+  };
+
+  const handleLogMealPress = () => {
+    if (!isLoggedIn) {
+      setShowAuthGate(true);
+      return;
+    }
+    setShowCustomMealModal(true);
   };
 
   const getGoalDisplayTitle = (g: string) => {
@@ -143,43 +176,49 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingTop: topSafeDistance }]}
       >
-        {/* 1. Header Bar: Profile, Theme Switcher & Settings */}
+        {/* 1. Header Bar: Profile, Theme Switcher, Weather & Settings */}
         <View style={styles.topHeader}>
-          <View style={styles.userProfileRow}>
+          <TouchableOpacity
+            onPress={() => setShowSettings(true)}
+            style={styles.userProfileRow}
+            activeOpacity={0.8}
+          >
             <View style={[styles.avatarCircle, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
               <Text style={[styles.avatarInitial, { color: theme.primary }]}>
-                {user.fullName ? user.fullName[0].toUpperCase() : 'M'}
+                {user.fullName && user.fullName !== 'New Member' ? user.fullName[0].toUpperCase() : 'M'}
               </Text>
             </View>
             <View>
               <Text style={[styles.greetingTitle, { color: theme.textPrimary }]}>
-                {isGuest ? 'Welcome, Friend' : `Namaste, ${user.fullName.split(' ')[0]}`}
+                {user.fullName && user.fullName !== 'New Member' ? `Namaste, ${user.fullName.split(' ')[0]}` : 'Namaste, Seeker'}
               </Text>
               <View style={styles.roleRow}>
-                <View style={[styles.onlineDot, { backgroundColor: theme.primary }]} />
+                <View style={[styles.onlineDot, { backgroundColor: isLoggedIn ? theme.primary : theme.amber }]} />
                 <Text style={[styles.roleText, { color: theme.textSecondary }]}>
-                  {user.role === 'super_admin' ? 'Super Admin' : 'Active Member'}
+                  {user.role === 'super_admin' ? 'Super Admin' : isLoggedIn ? 'Cloud Synced' : 'Waiting for Sign In'}
                 </Text>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.headerActionRow}>
-            {/* Theme Switcher Button */}
-            <TouchableOpacity
-              onPress={() => setShowThemeModal(true)}
-              style={[styles.themeBtn, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-              activeOpacity={0.7}
-            >
-              <Palette size={15} color={theme.primary} />
-              <Text style={[styles.themeBtnText, { color: theme.textPrimary }]}>Theme</Text>
-            </TouchableOpacity>
+            {/* Quick Sign In button if not logged in */}
+            {!isLoggedIn && (
+              <TouchableOpacity
+                onPress={() => router.push('/auth/login' as any)}
+                style={[styles.quickSignInBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.quickSignInText, { color: theme.primary }]}>Sign In</Text>
+              </TouchableOpacity>
+            )}
 
+            {/* Weather / Location Badge */}
             <TouchableOpacity
               onPress={() => setShowLocationModal(true)}
-              style={[styles.weatherBadge, { backgroundColor: theme.cyanLight, borderColor: 'rgba(0, 210, 255, 0.2)' }]}
+              style={[styles.weatherBadge, { backgroundColor: theme.cyanLight, borderColor: 'rgba(20, 136, 166, 0.2)' }]}
               activeOpacity={0.7}
             >
               <CloudSun size={13} color={theme.cyan} />
@@ -188,15 +227,56 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
 
+            {/* Top Right Settings Gear Button */}
             <TouchableOpacity
               onPress={() => setShowSettings(true)}
               style={[styles.iconButton, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
               activeOpacity={0.7}
             >
-              <Settings size={18} color={theme.textSecondary} />
+              <Settings size={18} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Unauthenticated Onboarding / Sign-In Status Card */}
+        {!isLoggedIn && (
+          <View style={[styles.onboardingCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={styles.onboardingCardTop}>
+              <View style={[styles.onboardingIconCircle, { backgroundColor: theme.primaryLight }]}>
+                <Sparkles size={16} color={theme.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.onboardingTitle, { color: theme.textPrimary }]}>
+                  Save & Protect Your Indian Diet
+                </Text>
+                <Text style={[styles.onboardingDesc, { color: theme.textSecondary }]}>
+                  Sign in with Google or Email to unlock the AI Food Scanner, record workout streaks, and sync across devices.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.onboardingActionRow}>
+              <TouchableOpacity
+                onPress={() => router.push('/auth/login' as any)}
+                style={[styles.onboardingPrimaryBtn, { backgroundColor: theme.primary }]}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.onboardingPrimaryBtnText, { color: '#FFFFFF' }]}>
+                  Sign In or Register
+                </Text>
+                <ArrowRight size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowPlanWizard(true)}
+                style={styles.onboardingLoginLink}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.onboardingLoginLinkText, { color: theme.textMuted }]}>
+                  Edit Metrics
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* 2. Hero Interactive Daily Energy Balance Card */}
         <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
@@ -211,12 +291,12 @@ export default function HomeScreen() {
 
             <View style={styles.heroRightActionRow}>
               <TouchableOpacity
-                onPress={() => setShowCustomMealModal(true)}
+                onPress={handleLogMealPress}
                 style={[styles.heroLogMealBtn, { backgroundColor: theme.primary }]}
                 activeOpacity={0.85}
               >
-                <Plus size={13} color={theme.isDark ? '#000000' : '#FFFFFF'} />
-                <Text style={[styles.heroLogMealText, { color: theme.isDark ? '#000000' : '#FFFFFF' }]}>
+                <Plus size={13} color="#FFFFFF" />
+                <Text style={[styles.heroLogMealText, { color: '#FFFFFF' }]}>
                   Log Meal
                 </Text>
               </TouchableOpacity>
@@ -544,6 +624,14 @@ export default function HomeScreen() {
           loadWeatherData(newCity);
         }}
       />
+      <SecurityVaultModal
+        visible={showSecurityModal}
+        onClose={() => setShowSecurityModal(false)}
+      />
+      <AuthRequiredModal
+        visible={showAuthGate}
+        onClose={() => setShowAuthGate(false)}
+      />
     </View>
   );
 }
@@ -567,6 +655,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  guestSyncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  guestSyncLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  guestSyncText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    flex: 1,
   },
   avatarCircle: {
     width: 42,
@@ -606,22 +714,81 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   themeBtn: {
+    padding: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onboardingCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+  },
+  onboardingCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 10,
+  },
+  onboardingIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onboardingTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  onboardingDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  onboardingActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  onboardingPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  onboardingPrimaryBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  onboardingLoginLink: {
+    paddingVertical: 6,
     paddingHorizontal: 8,
+  },
+  onboardingLoginLinkText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  quickSignInBtn: {
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  themeBtnText: {
+  quickSignInText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   weatherBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 10,
@@ -630,6 +797,19 @@ const styles = StyleSheet.create({
   weatherBadgeText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  securityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  securityBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
   iconButton: {
     width: 36,

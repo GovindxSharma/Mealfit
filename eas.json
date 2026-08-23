@@ -14,7 +14,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mealfitserviceapi.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://mealfitserviceapi.onrender.com/api",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "351938721714-v7jmbogjvvnik6utb00ovph4hn5ee9t9.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "351938721714-op178a4jbmssutp6td8ivmdgr8pdc62e.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -22,7 +24,9 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://mealfitserviceapi.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://mealfitserviceapi.onrender.com/api",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "351938721714-v7jmbogjvvnik6utb00ovph4hn5ee9t9.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "351938721714-op178a4jbmssutp6td8ivmdgr8pdc62e.apps.googleusercontent.com"
       }
     }
   },

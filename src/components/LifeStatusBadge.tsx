@@ -1,31 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { MobileApiService } from '../services/api';
-import { Colors } from '../theme/colors';
-import { Activity } from 'lucide-react-native';
+import { useTheme } from '../context/ThemeContext';
+import { Activity, Radio } from 'lucide-react-native';
 import { LifeStatusModal } from './LifeStatusModal';
 
 export const LifeStatusBadge: React.FC = () => {
+  const { theme } = useTheme();
   const [status, setStatus] = useState<'UP' | 'DOWN' | 'CHECKING'>('CHECKING');
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const checkStatus = async () => {
+      const start = Date.now();
       try {
         const res = await MobileApiService.getHealth();
+        if (!isMounted) return;
+        const ping = Date.now() - start;
+        setLatencyMs(ping);
         if (res && (res.status === 'UP' || res.uptimeSeconds !== undefined)) {
           setStatus('UP');
         } else {
           setStatus('DOWN');
         }
       } catch (err) {
+        if (!isMounted) return;
         setStatus('DOWN');
       }
     };
 
     checkStatus();
     const interval = setInterval(checkStatus, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const isUp = status === 'UP';
@@ -37,26 +48,26 @@ export const LifeStatusBadge: React.FC = () => {
         style={[
           styles.badge,
           {
-            backgroundColor: isUp ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-            borderColor: isUp ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+            backgroundColor: isUp ? 'rgba(0, 230, 118, 0.12)' : 'rgba(255, 82, 82, 0.12)',
+            borderColor: isUp ? 'rgba(0, 230, 118, 0.3)' : 'rgba(255, 82, 82, 0.3)',
           },
         ]}
-        activeOpacity={0.7}
+        activeOpacity={0.75}
       >
         <View
           style={[
             styles.dot,
-            { backgroundColor: isUp ? Colors.success : Colors.danger },
+            { backgroundColor: isUp ? theme.primary : theme.rose },
           ]}
         />
-        <Activity size={12} color={isUp ? Colors.success : Colors.danger} />
+        <Activity size={11} color={isUp ? theme.primary : theme.rose} />
         <Text
           style={[
             styles.badgeText,
-            { color: isUp ? Colors.success : Colors.danger },
+            { color: isUp ? theme.primary : theme.rose },
           ]}
         >
-          {isUp ? 'Backend Live' : 'Offline'}
+          {isUp ? (latencyMs ? `${latencyMs}ms Live` : 'Live API') : 'Offline'}
         </Text>
       </TouchableOpacity>
 
@@ -72,10 +83,10 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 14,
     borderWidth: 1,
   },
   dot: {
@@ -84,7 +95,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });

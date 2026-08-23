@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { SafeStorage } from '../services/storage';
 
-export type ThemeMode = 'matte_black' | 'light_clean';
+export type ThemeMode = 'teal_balance' | 'system' | 'matte_black' | 'light_clean';
 
 export interface ThemeColors {
-  mode: ThemeMode;
+  mode: string;
   isDark: boolean;
   background: string;
   backgroundSecondary: string;
@@ -12,11 +13,17 @@ export interface ThemeColors {
   cardBorder: string;
   cardBorderActive: string;
   
-  // Primary Palette
+  // Primary Teal & Mint Palette
   primary: string;
   primaryDark: string;
   primaryLight: string;
   primaryGlow: string;
+
+  secondary: string;
+  secondaryLight: string;
+  accent: string;
+  mint: string;
+  mintLight: string;
   
   amber: string;
   amberLight: string;
@@ -41,98 +48,70 @@ export interface ThemeColors {
   textSubtle: string;
   
   danger: string;
+  dangerLight: string;
   success: string;
+  successLight: string;
   warning: string;
+  warningLight: string;
+  info: string;
+  infoLight: string;
 }
 
-const themePresets: Record<ThemeMode, ThemeColors> = {
-  // 1. Matte Dark Black (Pure Stealth Black + Apple Pro Electric Azure Blue #0A84FF & Sunset Amber)
-  matte_black: {
-    mode: 'matte_black',
-    isDark: true,
-    background: '#000000',
-    backgroundSecondary: '#0A0A0A',
-    card: '#121212',
-    cardElevated: '#181818',
-    cardBorder: '#242424',
-    cardBorderActive: 'rgba(10, 132, 255, 0.45)',
-    
-    // Primary: Pro Electric Azure Blue (Perfect balance with matte black)
-    primary: '#0A84FF',
-    primaryDark: '#0066CC',
-    primaryLight: 'rgba(10, 132, 255, 0.14)',
-    primaryGlow: 'rgba(10, 132, 255, 0.28)',
-    
-    amber: '#F59E0B',
-    amberLight: 'rgba(245, 158, 11, 0.14)',
-    amberGlow: 'rgba(245, 158, 11, 0.3)',
-    
-    cyan: '#38BDF8',
-    cyanLight: 'rgba(56, 189, 248, 0.14)',
-    
-    indigo: '#6366F1',
-    indigoLight: 'rgba(99, 102, 241, 0.15)',
-    indigoGlow: 'rgba(99, 102, 241, 0.35)',
-    
-    purple: '#A855F7',
-    purpleLight: 'rgba(168, 85, 247, 0.15)',
-    
-    rose: '#F43F5E',
-    roseLight: 'rgba(244, 63, 94, 0.14)',
-    
-    textPrimary: '#FFFFFF',
-    textSecondary: '#A1A1AA',
-    textMuted: '#71717A',
-    textSubtle: '#52525B',
-    
-    danger: '#EF4444',
-    success: '#0A84FF',
-    warning: '#F59E0B',
-  },
+export const tealBalanceTheme: ThemeColors = {
+  mode: 'teal_balance',
+  isDark: false,
+  background: '#FFFFFF',
+  backgroundSecondary: '#F7FBF8',
+  card: '#F7FBF8',
+  cardElevated: '#FFFFFF',
+  cardBorder: '#E2E8F0',
+  cardBorderActive: '#1488A6',
+  
+  // Primary: Teal Balance (#1488A6)
+  primary: '#1488A6',
+  primaryDark: '#0D6277',
+  primaryLight: '#CCF8F1',
+  primaryGlow: 'rgba(20, 136, 166, 0.18)',
 
-  // 2. Clean Pearl Light (Crisp Daylight White + Lush Emerald Green & Amber)
-  light_clean: {
-    mode: 'light_clean',
-    isDark: false,
-    background: '#F8FAFC',
-    backgroundSecondary: '#F1F5F9',
-    card: '#FFFFFF',
-    cardElevated: '#FFFFFF',
-    cardBorder: '#E2E8F0',
-    cardBorderActive: 'rgba(5, 150, 105, 0.4)',
-    
-    // Primary: Fresh Emerald Green (Looks great on clean white)
-    primary: '#059669',
-    primaryDark: '#047857',
-    primaryLight: 'rgba(5, 150, 105, 0.12)',
-    primaryGlow: 'rgba(5, 150, 105, 0.22)',
-    
-    amber: '#D97706',
-    amberLight: 'rgba(217, 119, 6, 0.12)',
-    amberGlow: 'rgba(217, 119, 6, 0.25)',
-    
-    cyan: '#0284C7',
-    cyanLight: 'rgba(2, 132, 199, 0.12)',
-    
-    indigo: '#4F46E5',
-    indigoLight: 'rgba(79, 70, 229, 0.12)',
-    indigoGlow: 'rgba(79, 70, 229, 0.2)',
-    
-    purple: '#7C3AED',
-    purpleLight: 'rgba(124, 58, 237, 0.12)',
-    
-    rose: '#E11D48',
-    roseLight: 'rgba(225, 29, 72, 0.12)',
-    
-    textPrimary: '#0F172A',
-    textSecondary: '#475569',
-    textMuted: '#64748B',
-    textSubtle: '#94A3B8',
-    
-    danger: '#DC2626',
-    success: '#059669',
-    warning: '#D97706',
-  },
+  // Secondary Mint (#20D4BF)
+  secondary: '#20D4BF',
+  secondaryLight: '#E6FFFA',
+  accent: '#CCF8F1',
+  mint: '#20D4BF',
+  mintLight: '#CCF8F1',
+  
+  amber: '#D97706',
+  amberLight: '#FEF3C7',
+  amberGlow: 'rgba(217, 119, 6, 0.2)',
+  
+  cyan: '#1488A6',
+  cyanLight: '#CCF8F1',
+  
+  indigo: '#4F46E5',
+  indigoLight: '#EEF2FF',
+  indigoGlow: 'rgba(79, 70, 229, 0.15)',
+  
+  purple: '#7C3AED',
+  purpleLight: '#F3E8FF',
+  
+  rose: '#E11D48',
+  roseLight: '#FFE4E6',
+  
+  // Typography
+  textPrimary: '#0F172A',
+  textSecondary: '#475569',
+  textMuted: '#64748B',
+  textSubtle: '#94A3B8',
+  
+  // Alerts & Messages
+  danger: '#DC2626',
+  dangerLight: '#FEE2E2',
+  success: '#1488A6',
+  successLight: '#DCFCE7',
+  warning: '#D97706',
+  warningLight: '#FEF3C7',
+  info: '#0284C7',
+  infoLight: '#E0F2FE',
 };
 
 interface ThemeContextType {
@@ -143,29 +122,43 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: themePresets.matte_black,
-  themeMode: 'matte_black',
+  theme: tealBalanceTheme,
+  themeMode: 'teal_balance',
   setThemeMode: () => {},
   toggleTheme: () => {},
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('matte_black');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('teal_balance');
 
-  const setThemeMode = (mode: ThemeMode) => {
+  useEffect(() => {
+    (async () => {
+      try {
+        await SafeStorage.setItem('mealfit_theme_mode', 'teal_balance');
+      } catch (e) {
+        // Ignored
+      }
+    })();
+  }, []);
+
+  const setThemeMode = async (mode: ThemeMode) => {
     setThemeModeState(mode);
+    try {
+      await SafeStorage.setItem('mealfit_theme_mode', mode);
+    } catch (e) {
+      // Ignored
+    }
   };
 
   const toggleTheme = () => {
-    setThemeModeState((prev) => (prev === 'matte_black' ? 'light_clean' : 'matte_black'));
+    // Single theme locked to Teal Balance
+    setThemeMode('teal_balance');
   };
-
-  const theme = themePresets[themeMode] || themePresets.matte_black;
 
   return (
     <ThemeContext.Provider
       value={{
-        theme,
+        theme: tealBalanceTheme,
         themeMode,
         setThemeMode,
         toggleTheme,
@@ -177,3 +170,4 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 };
 
 export const useTheme = () => useContext(ThemeContext);
+

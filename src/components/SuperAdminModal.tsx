@@ -296,11 +296,11 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderWidth: 1,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   pinInput: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: Colors.cardBorder,
     borderRadius: 12,
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: Colors.card,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   infraCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: Colors.card,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -513,10 +513,10 @@ const styles = StyleSheet.create({
   addFoodBtnText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#000000',
+    color: '#FFFFFF',
   },
   addFoodForm: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: '#F8FAFC',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     color: Colors.amber,
   },
   formInput: {
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: Colors.cardBorder,
     borderRadius: 8,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.cardBorder,
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.cardBorder,

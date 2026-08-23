@@ -1,50 +1,69 @@
 /**
- * MealFit Luxe Design System Color Tokens
- * Pure Matte Black & Electric Ice Blue Palette
+ * MealFit Design System Color Tokens - Teal Balance
+ * Calm • Balanced • Holistic
  */
 export const Colors = {
-  // Pure Matte Black Backgrounds
-  background: '#000000',
-  backgroundSecondary: '#0A0A0A',
+  // Primary Backgrounds (Light Daylight & Soft Tinted Surface)
+  background: '#FFFFFF',
+  backgroundSecondary: '#F7FBF8',
 
   // Surface & Cards
-  card: '#121212',
-  cardElevated: '#1A1A1A',
-  cardBorder: '#262626',
-  cardBorderActive: 'rgba(56, 189, 248, 0.45)',
+  card: '#F7FBF8',
+  cardElevated: '#FFFFFF',
+  cardBorder: '#E2E8F0',
+  cardBorderActive: '#1488A6',
 
-  // Primary: Electric Ice Blue (High-tech, sleek, ultra-clean)
-  primary: '#38BDF8',
-  primaryDark: '#0284C7',
-  primaryLight: 'rgba(56, 189, 248, 0.14)',
-  primaryGlow: 'rgba(56, 189, 248, 0.28)',
+  // Primary: Teal Balance (#1488A6)
+  primary: '#1488A6',
+  primaryDark: '#0D6277',
+  primaryLight: '#CCF8F1',
+  primaryGlow: 'rgba(20, 136, 166, 0.18)',
 
-  // Accent Colors
-  amber: '#F59E0B',
-  amberLight: 'rgba(245, 158, 11, 0.14)',
-  amberGlow: 'rgba(245, 158, 11, 0.3)',
+  // Secondary: Mint (#20D4BF)
+  secondary: '#20D4BF',
+  secondaryLight: '#E6FFFA',
+  secondaryDark: '#0D9488',
 
-  cyan: '#38BDF8',
-  cyanLight: 'rgba(56, 189, 248, 0.14)',
+  // Accent: Soft Green (#CCF8F1)
+  accent: '#CCF8F1',
+  accentDark: '#1488A6',
+  accentLight: '#F0FDF9',
 
-  indigo: '#818CF8',
-  indigoLight: 'rgba(129, 140, 248, 0.15)',
-  indigoGlow: 'rgba(129, 140, 248, 0.35)',
+  // Accent Colors tuned for Teal Balance
+  amber: '#D97706',
+  amberLight: '#FEF3C7',
+  amberGlow: 'rgba(217, 119, 6, 0.2)',
 
-  purple: '#A855F7',
-  purpleLight: 'rgba(168, 85, 247, 0.15)',
+  cyan: '#1488A6',
+  cyanLight: '#CCF8F1',
 
-  rose: '#F43F5E',
-  roseLight: 'rgba(244, 63, 94, 0.14)',
+  mint: '#20D4BF',
+  mintLight: '#CCF8F1',
+
+  indigo: '#4F46E5',
+  indigoLight: '#EEF2FF',
+  indigoGlow: 'rgba(79, 70, 229, 0.15)',
+
+  purple: '#7C3AED',
+  purpleLight: '#F3E8FF',
+
+  rose: '#E11D48',
+  roseLight: '#FFE4E6',
 
   // Typography
-  textPrimary: '#FFFFFF',
-  textSecondary: '#A1A1AA',
-  textMuted: '#71717A',
-  textSubtle: '#52525B',
+  textPrimary: '#0F172A',
+  textSecondary: '#475569',
+  textMuted: '#64748B',
+  textSubtle: '#94A3B8',
 
   // Status & Utility
-  danger: '#EF4444',
-  success: '#38BDF8',
-  warning: '#F59E0B',
+  danger: '#DC2626',
+  dangerLight: '#FEE2E2',
+  success: '#1488A6',
+  successLight: '#DCFCE7',
+  warning: '#D97706',
+  warningLight: '#FEF3C7',
+  info: '#0284C7',
+  infoLight: '#E0F2FE',
 };
+
