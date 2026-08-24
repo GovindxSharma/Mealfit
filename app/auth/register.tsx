@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Utensils,
   ArrowRight,
@@ -32,62 +32,91 @@ import {
 
 export default function RegisterScreen() {
   const { theme } = useTheme();
-  const { registerWithEmail, login, updateUserProfile } = useAuth();
+  const { registerWithEmail, updateUserProfile } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams<{ prefillEmail?: string }>();
 
   const [fullName, setFullName] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>(params?.prefillEmail || '');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [goalType, setGoalType] = useState<'fat_loss' | 'muscle_gain' | 'recomp' | 'low_gi_pcod'>('fat_loss');
   const [dietaryPref, setDietaryPref] = useState<'veg' | 'non_veg' | 'eggetarian' | 'jain'>('veg');
   const [loading, setLoading] = useState<boolean>(false);
 
+  React.useEffect(() => {
+    if (params?.prefillEmail) {
+      setEmail(params.prefillEmail);
+    }
+  }, [params?.prefillEmail]);
+
   const handleBackToApp = () => {
     router.replace('/(tabs)');
   };
 
   const handleRegister = async () => {
-    if (!fullName.trim()) {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedName) {
       Alert.alert('Required Field', 'Please enter your full name.');
       return;
     }
-    if (!email.trim() || !email.includes('@') || !email.includes('.')) {
+    if (!trimmedEmail || !trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
       return;
     }
-    if (password.length < 4) {
-      Alert.alert('Short Password', 'Please enter a password with at least 4 characters.');
+    if (!password || password.length < 6) {
+      Alert.alert('Short Password', 'Please enter a secure password with at least 6 characters.');
       return;
     }
 
     setLoading(true);
     try {
-      if (registerWithEmail) {
-        await registerWithEmail({
-          fullName: fullName.trim(),
-          email: email.trim(),
-          password,
-          dietaryPreference: dietaryPref,
-        });
-      } else {
-        login(email.trim(), fullName.trim());
-        updateUserProfile({
-          fullName: fullName.trim(),
-          goalType,
-          dietaryPreference: dietaryPref,
-        });
-      }
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      // Local fallback so user is never blocked
-      login(email.trim(), fullName.trim());
-      updateUserProfile({
-        fullName: fullName.trim(),
-        goalType,
+      await registerWithEmail({
+        fullName: trimmedName,
+        email: trimmedEmail,
+        password,
         dietaryPreference: dietaryPref,
+        goalType,
       });
       router.replace('/(tabs)');
+    } catch (err: any) {
+      const errMsg = err?.message || 'Unable to register';
+
+      if (
+        errMsg.toLowerCase().includes('already exists') ||
+        errMsg.toLowerCase().includes('duplicate') ||
+        errMsg.toLowerCase().includes('409')
+      ) {
+        Alert.alert(
+          'Account Already Exists',
+          `An account with "${trimmedEmail}" is already registered.\n\nWould you like to sign in instead?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Sign In',
+              onPress: () => {
+                router.push({
+                  pathname: '/auth/login',
+                  params: { prefillEmail: trimmedEmail },
+                } as any);
+              },
+            },
+          ]
+        );
+      } else if (
+        errMsg.toLowerCase().includes('failed to fetch') ||
+        errMsg.toLowerCase().includes('network') ||
+        errMsg.toLowerCase().includes('connection')
+      ) {
+        Alert.alert(
+          'Connection Error',
+          'Unable to reach MealFit server. Please verify your internet connection and try again.'
+        );
+      } else {
+        Alert.alert('Registration Failed', errMsg);
+      }
     } finally {
       setLoading(false);
     }

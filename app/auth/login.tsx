@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowRight,
   ArrowLeft,
@@ -29,40 +29,91 @@ import {
 
 export default function LoginScreen() {
   const { theme } = useTheme();
-  const { loginWithEmail, login } = useAuth();
+  const { loginWithEmail } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams<{ prefillEmail?: string }>();
 
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>(params?.prefillEmail || '');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (params?.prefillEmail) {
+      setEmail(params.prefillEmail);
+    }
+  }, [params?.prefillEmail]);
 
   const handleBackToApp = () => {
     router.replace('/(tabs)');
   };
 
   const handleSignIn = async () => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password;
+
+    if (!trimmedEmail) {
       Alert.alert('Required Field', 'Please enter your email address.');
       return;
     }
-    if (!email.includes('@') || !email.includes('.')) {
+    if (!trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    if (!trimmedPassword) {
+      Alert.alert('Required Field', 'Please enter your password.');
       return;
     }
 
     setLoading(true);
     try {
-      if (loginWithEmail) {
-        await loginWithEmail(email.trim(), password);
-      } else {
-        login(email.trim());
-      }
+      await loginWithEmail(trimmedEmail, trimmedPassword);
       router.replace('/(tabs)');
     } catch (err: any) {
-      // Local fallback so user is never blocked
-      login(email.trim());
-      router.replace('/(tabs)');
+      const errMsg = err?.message || 'Unable to sign in';
+      
+      if (
+        errMsg.toLowerCase().includes('no account found') ||
+        errMsg.toLowerCase().includes('not found') ||
+        errMsg.toLowerCase().includes('create a new account') ||
+        errMsg.toLowerCase().includes('404')
+      ) {
+        Alert.alert(
+          'Account Not Found',
+          `No MealFit account was found for "${trimmedEmail}".\n\nWould you like to create a new free account now?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Create Account',
+              onPress: () => {
+                router.push({
+                  pathname: '/auth/register',
+                  params: { prefillEmail: trimmedEmail },
+                } as any);
+              },
+            },
+          ]
+        );
+      } else if (
+        errMsg.toLowerCase().includes('incorrect password') ||
+        errMsg.toLowerCase().includes('invalid credentials')
+      ) {
+        Alert.alert(
+          'Incorrect Password',
+          'The password you entered is incorrect. Please check your password and try again.'
+        );
+      } else if (
+        errMsg.toLowerCase().includes('failed to fetch') ||
+        errMsg.toLowerCase().includes('network') ||
+        errMsg.toLowerCase().includes('connection')
+      ) {
+        Alert.alert(
+          'Connection Error',
+          'Unable to reach MealFit server. Please verify your internet connection and try again.'
+        );
+      } else {
+        Alert.alert('Sign In Failed', errMsg);
+      }
     } finally {
       setLoading(false);
     }

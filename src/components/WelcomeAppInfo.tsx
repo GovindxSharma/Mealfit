@@ -34,7 +34,7 @@ export const WelcomeAppInfo: React.FC = () => {
   };
 
   const handleQuickLogin = () => {
-    login(emailInput || 'govind@mealfit.in', nameInput || 'Govind Sharma');
+    router.push('/auth/login' as any);
   };
 
   const handleGuest = () => {

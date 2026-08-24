@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
+import { MobileApiService } from '../services/api';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -29,6 +31,11 @@ import {
   Flame,
   Radio,
   CheckCircle,
+  RefreshCw,
+  Search,
+  User,
+  Crown,
+  Sparkles,
 } from 'lucide-react-native';
 
 interface SuperAdminModalProps {
@@ -40,6 +47,12 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
   const { isSuperAdmin, unlockSuperAdmin, lockSuperAdmin } = useAuth();
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string | null>(null);
+
+  // Live Users Management State
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState<boolean>(false);
+  const [userSearchQuery, setUserSearchQuery] = useState<string>('');
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<'all' | 'super_admin' | 'admin' | 'user'>('all');
 
   // Food catalog manager state
   const [foodsList, setFoodsList] = useState([
@@ -56,12 +69,44 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
   const [newFoodCost, setNewFoodCost] = useState('');
   const [showAddFood, setShowAddFood] = useState(false);
 
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await MobileApiService.getAdminUsers();
+      if (res?.users) {
+        setUsersList(res.users);
+      }
+    } catch (err: any) {
+      console.warn('[SuperAdmin] Failed to load users:', err?.message || err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (visible && isSuperAdmin) {
+      fetchUsers();
+    }
+  }, [visible, isSuperAdmin]);
+
   const handleUnlock = () => {
     if (unlockSuperAdmin(pinInput)) {
       setPinError(null);
       setPinInput('');
+      fetchUsers();
     } else {
       setPinError('Invalid Owner Passcode. (Use: 778899)');
+    }
+  };
+
+  const handleRoleChange = async (userId: string, currentRole: string, newRole: string) => {
+    if (currentRole === newRole) return;
+    try {
+      await MobileApiService.updateUserRole(userId, newRole);
+      Alert.alert('Role Updated', `User role successfully updated to ${newRole}.`);
+      fetchUsers();
+    } catch (err: any) {
+      Alert.alert('Update Failed', err?.message || 'Unable to update user role');
     }
   };
 
@@ -89,6 +134,22 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
     setShowAddFood(false);
   };
 
+  const filteredUsers = usersList.filter((u) => {
+    const matchesSearch =
+      (u.fullName || '').toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      (u.city || '').toLowerCase().includes(userSearchQuery.toLowerCase());
+
+    const matchesRole =
+      selectedRoleFilter === 'all' || u.role === selectedRoleFilter;
+
+    return matchesSearch && matchesRole;
+  });
+
+  const superAdminCount = usersList.filter((u) => u.role === 'super_admin').length;
+  const adminTesterCount = usersList.filter((u) => u.role === 'admin').length;
+  const regularUserCount = usersList.filter((u) => u.role === 'user' || !u.role).length;
+
   return (
     <Modal
       visible={visible}
@@ -106,7 +167,7 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
               </View>
               <View>
                 <Text style={styles.title}>Super Admin Command Center</Text>
-                <Text style={styles.subtitle}>Owner & Platform Metrics Dashboard</Text>
+                <Text style={styles.subtitle}>Owner & Platform Directory Dashboard</Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
@@ -122,7 +183,7 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
               </View>
               <Text style={styles.lockTitle}>Owner Authentication Required</Text>
               <Text style={styles.lockDesc}>
-                This dashboard is locked for the platform owner only. Enter your Master Passcode to inspect user analytics, manage food items, and monitor infrastructure.
+                This dashboard is locked for the platform owner only. Enter your Master Passcode to inspect all registered users, roles, and platform metrics.
               </Text>
 
               <View style={styles.pinInputContainer}>
@@ -150,46 +211,274 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
               {/* Platform Metrics Overview */}
               <View style={styles.sectionHeaderRow}>
                 <Activity size={16} color={Colors.primary} />
-                <Text style={styles.sectionHeading}>LIVE USER ANALYTICS & ACTIVITY</Text>
+                <Text style={styles.sectionHeading}>LIVE USER ANALYTICS & ROLES</Text>
               </View>
 
               <View style={styles.statsGrid}>
                 <View style={styles.statCard}>
                   <View style={styles.statCardTop}>
                     <Users size={16} color={Colors.cyan} />
-                    <Text style={styles.statGrowth}>+18% this wk</Text>
+                    <Text style={styles.statGrowth}>MongoDB Cloud</Text>
                   </View>
-                  <Text style={styles.statBig}>1,428</Text>
-                  <Text style={styles.statLabel}>Total Registered Users</Text>
+                  <Text style={styles.statBig}>{usersList.length || 1}</Text>
+                  <Text style={styles.statLabel}>Total Registered</Text>
                 </View>
 
                 <View style={styles.statCard}>
                   <View style={styles.statCardTop}>
-                    <Radio size={16} color={Colors.primary} />
-                    <Text style={[styles.statGrowth, { color: Colors.primary }]}>Active Now</Text>
+                    <Crown size={16} color={Colors.amber} />
+                    <Text style={[styles.statGrowth, { color: Colors.amber }]}>Lead</Text>
                   </View>
-                  <Text style={styles.statBig}>892</Text>
-                  <Text style={styles.statLabel}>Active Users Today</Text>
+                  <Text style={styles.statBig}>{superAdminCount}</Text>
+                  <Text style={styles.statLabel}>Super Admins</Text>
                 </View>
 
                 <View style={styles.statCard}>
                   <View style={styles.statCardTop}>
-                    <Utensils size={16} color={Colors.amber} />
-                    <Text style={styles.statGrowth}>Live Log</Text>
+                    <ShieldCheck size={16} color={Colors.indigo} />
+                    <Text style={[styles.statGrowth, { color: Colors.indigo }]}>Testers</Text>
                   </View>
-                  <Text style={styles.statBig}>3,140</Text>
-                  <Text style={styles.statLabel}>Katoris / Meals Logged</Text>
+                  <Text style={styles.statBig}>{adminTesterCount}</Text>
+                  <Text style={styles.statLabel}>Admin / Testers</Text>
                 </View>
 
                 <View style={styles.statCard}>
                   <View style={styles.statCardTop}>
-                    <IndianRupee size={16} color={Colors.indigo} />
-                    <Text style={[styles.statGrowth, { color: Colors.indigo }]}>Saved</Text>
+                    <User size={16} color={Colors.primary} />
+                    <Text style={[styles.statGrowth, { color: Colors.primary }]}>Active</Text>
                   </View>
-                  <Text style={styles.statBig}>₹4.8L</Text>
-                  <Text style={styles.statLabel}>Kirana Savings across Users</Text>
+                  <Text style={styles.statBig}>{regularUserCount}</Text>
+                  <Text style={styles.statLabel}>Standard Members</Text>
                 </View>
               </View>
+
+              {/* ━━━ USER & TESTER DIRECTORY ━━━ */}
+              <View style={styles.foodHeaderRow}>
+                <View style={styles.sectionHeaderRow}>
+                  <Users size={16} color={Colors.indigo} />
+                  <Text style={styles.sectionHeading}>ALL USERS & TESTER ROLES ({filteredUsers.length})</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={fetchUsers}
+                  style={styles.refreshBtn}
+                  activeOpacity={0.7}
+                >
+                  <RefreshCw size={13} color={Colors.indigo} />
+                  <Text style={styles.refreshBtnText}>Refresh</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Search & Filter Bar */}
+              <View style={styles.searchBarBox}>
+                <Search size={16} color={Colors.textMuted} />
+                <TextInput
+                  style={styles.searchBarInput}
+                  placeholder="Search user by name, email, or city..."
+                  placeholderTextColor={Colors.textMuted}
+                  value={userSearchQuery}
+                  onChangeText={setUserSearchQuery}
+                />
+                {userSearchQuery ? (
+                  <TouchableOpacity onPress={() => setUserSearchQuery('')}>
+                    <X size={16} color={Colors.textMuted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              {/* Role Filter Pills */}
+              <View style={styles.roleFilterRow}>
+                {[
+                  { id: 'all', label: `All (${usersList.length})` },
+                  { id: 'super_admin', label: `Super Admin (${superAdminCount})` },
+                  { id: 'admin', label: `Tester / Admin (${adminTesterCount})` },
+                  { id: 'user', label: `User (${regularUserCount})` },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => setSelectedRoleFilter(item.id as any)}
+                    style={[
+                      styles.roleFilterPill,
+                      selectedRoleFilter === item.id && styles.roleFilterPillActive,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.roleFilterText,
+                        selectedRoleFilter === item.id && styles.roleFilterTextActive,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Live Users List */}
+              {loadingUsers ? (
+                <View style={styles.loadingBox}>
+                  <ActivityIndicator size="small" color={Colors.indigo} />
+                  <Text style={styles.loadingText}>Fetching registered users from MongoDB...</Text>
+                </View>
+              ) : filteredUsers.length === 0 ? (
+                <View style={styles.emptyUsersBox}>
+                  <Text style={styles.emptyUsersText}>No users found matching your filter.</Text>
+                </View>
+              ) : (
+                <View style={styles.usersListContainer}>
+                  {filteredUsers.map((u) => {
+                    const isSuper = u.role === 'super_admin';
+                    const isAdmin = u.role === 'admin';
+
+                    return (
+                      <View key={u.id || u._id} style={styles.userCard}>
+                        <View style={styles.userCardHeader}>
+                          <View style={styles.userAvatarAndInfo}>
+                            <View
+                              style={[
+                                styles.userAvatarCircle,
+                                {
+                                  backgroundColor: isSuper
+                                    ? Colors.amberLight
+                                    : isAdmin
+                                    ? Colors.indigoLight
+                                    : Colors.primaryLight,
+                                },
+                              ]}
+                            >
+                              {isSuper ? (
+                                <Crown size={16} color={Colors.amber} />
+                              ) : isAdmin ? (
+                                <ShieldCheck size={16} color={Colors.indigo} />
+                              ) : (
+                                <User size={16} color={Colors.primary} />
+                              )}
+                            </View>
+
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.userNameText}>
+                                {u.fullName || 'MealFit Member'}
+                              </Text>
+                              <Text style={styles.userEmailText}>{u.email}</Text>
+                            </View>
+                          </View>
+
+                          {/* Role Badge */}
+                          <View
+                            style={[
+                              styles.userRoleBadge,
+                              {
+                                backgroundColor: isSuper
+                                  ? '#FEF3C7'
+                                  : isAdmin
+                                  ? '#EEF2FF'
+                                  : '#ECFDF5',
+                                borderColor: isSuper
+                                  ? '#F59E0B'
+                                  : isAdmin
+                                  ? '#6366F1'
+                                  : '#10B981',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.userRoleBadgeText,
+                                {
+                                  color: isSuper
+                                    ? '#B45309'
+                                    : isAdmin
+                                    ? '#4338CA'
+                                    : '#047857',
+                                },
+                              ]}
+                            >
+                              {isSuper
+                                ? '👑 SUPER ADMIN'
+                                : isAdmin
+                                ? '🛡️ ADMIN / TESTER'
+                                : '👤 USER'}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* User Metadata Row */}
+                        <View style={styles.userMetaRow}>
+                          <Text style={styles.userMetaText}>
+                            📍 City: <Text style={{ fontWeight: '700' }}>{u.city || 'Delhi'}</Text>
+                          </Text>
+                          <Text style={styles.userMetaText}>
+                            🥗 Diet: <Text style={{ fontWeight: '700' }}>{u.dietaryPreference || 'veg'}</Text>
+                          </Text>
+                          <Text style={styles.userMetaText}>
+                            🎯 Goal: <Text style={{ fontWeight: '700' }}>{u.goalType || 'fat_loss'}</Text>
+                          </Text>
+                        </View>
+
+                        {/* Quick Role Switch Actions (Super Admin Exclusive) */}
+                        <View style={styles.roleActionRow}>
+                          <Text style={styles.roleActionLabel}>Change Role:</Text>
+                          <View style={styles.roleActionButtons}>
+                            <TouchableOpacity
+                              onPress={() => handleRoleChange(u.id || u._id, u.role, 'user')}
+                              style={[
+                                styles.smallRoleBtn,
+                                u.role === 'user' && styles.smallRoleBtnActive,
+                              ]}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.smallRoleBtnText,
+                                  u.role === 'user' && styles.smallRoleBtnTextActive,
+                                ]}
+                              >
+                                User
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => handleRoleChange(u.id || u._id, u.role, 'admin')}
+                              style={[
+                                styles.smallRoleBtn,
+                                u.role === 'admin' && styles.smallRoleBtnActive,
+                              ]}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.smallRoleBtnText,
+                                  u.role === 'admin' && styles.smallRoleBtnTextActive,
+                                ]}
+                              >
+                                Admin / Tester
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => handleRoleChange(u.id || u._id, u.role, 'super_admin')}
+                              style={[
+                                styles.smallRoleBtn,
+                                u.role === 'super_admin' && styles.smallRoleBtnActive,
+                              ]}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.smallRoleBtnText,
+                                  u.role === 'super_admin' && styles.smallRoleBtnTextActive,
+                                ]}
+                              >
+                                Super Admin
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
 
               {/* Infrastructure Status */}
               <View style={styles.sectionHeaderRow}>
@@ -199,23 +488,19 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({ visible, onClo
 
               <View style={styles.infraCard}>
                 <View style={styles.infraRow}>
-                  <Text style={styles.infraLabel}>Local Database Engine:</Text>
+                  <Text style={styles.infraLabel}>Atlas MongoDB Cloud:</Text>
                   <View style={styles.infraStatusRow}>
                     <View style={styles.greenDot} />
-                    <Text style={styles.infraVal}>Connected (2ms Ping)</Text>
+                    <Text style={styles.infraVal}>Connected (Active Ping)</Text>
                   </View>
                 </View>
                 <View style={styles.infraRow}>
-                  <Text style={styles.infraLabel}>Cloudflare Tunnel:</Text>
-                  <Text style={[styles.infraVal, { color: Colors.cyan }]}>Active (HTTPS)</Text>
+                  <Text style={styles.infraLabel}>JWT Token Encryption:</Text>
+                  <Text style={[styles.infraVal, { color: Colors.primary }]}>Bcrypt + HS256 Signed</Text>
                 </View>
                 <View style={styles.infraRow}>
                   <Text style={styles.infraLabel}>Open-Meteo Satellite Feed:</Text>
-                  <Text style={styles.infraVal}>Healthy (210ms)</Text>
-                </View>
-                <View style={styles.infraRow}>
-                  <Text style={styles.infraLabel}>Node.js Process Memory:</Text>
-                  <Text style={styles.infraVal}>38.4 MB (Heap: 18.2 MB)</Text>
+                  <Text style={styles.infraVal}>Healthy (AQI + Weather)</Text>
                 </View>
               </View>
 
@@ -594,6 +879,186 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: Colors.amber,
+  },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  refreshBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.indigo,
+  },
+  searchBarBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  searchBarInput: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    paddingVertical: 0,
+  },
+  roleFilterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  roleFilterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+  },
+  roleFilterPillActive: {
+    backgroundColor: Colors.indigo,
+    borderColor: Colors.indigo,
+  },
+  roleFilterText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  roleFilterTextActive: {
+    color: '#FFFFFF',
+  },
+  loadingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 20,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  emptyUsersBox: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+  },
+  emptyUsersText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: '600',
+  },
+  usersListContainer: {
+    gap: 10,
+  },
+  userCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+    padding: 12,
+    gap: 8,
+  },
+  userCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  userAvatarAndInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  userAvatarCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userNameText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  userEmailText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  userRoleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  userRoleBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+  },
+  userMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingVertical: 4,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  userMetaText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  roleActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 2,
+  },
+  roleActionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textMuted,
+  },
+  roleActionButtons: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  smallRoleBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+  },
+  smallRoleBtnActive: {
+    backgroundColor: Colors.indigo,
+    borderColor: Colors.indigo,
+  },
+  smallRoleBtnText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  smallRoleBtnTextActive: {
+    color: '#FFFFFF',
   },
   lockBackBtn: {
     flexDirection: 'row',

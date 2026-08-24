@@ -118,6 +118,8 @@ interface AuthContextType {
     dietaryPreference?: DietaryType;
     weeklyBudgetInr?: number;
     city?: string;
+    goalType?: GoalType;
+    gender?: 'male' | 'female';
   }) => Promise<void>;
   logout: () => void;
   continueAsGuest: () => void;
@@ -356,7 +358,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loggedMealIds, setLoggedMealIds] = useState<string[]>(['breakfast', 'lunch']);
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>(['ex_1', 'ex_2']);
 
-  // Load saved session on startup
+  // Load saved session on startup & verify cloud JWT validity
   useEffect(() => {
     (async () => {
       try {
@@ -373,7 +375,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const parsed = JSON.parse(savedUserStr);
             setUser((prev) => {
               const merged = { ...prev, ...parsed };
-              // Recompute targets to ensure accuracy
               const targets = calculateRealisticTargets(
                 merged.weightKg || 70,
                 merged.heightCm || 172,
@@ -396,25 +397,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        if (savedToken) {
+        // Check if token exists and is a valid real JWT (not old mock session)
+        if (savedToken && !savedToken.startsWith('local_jwt_session_')) {
           setTokenState(savedToken);
           setAuthToken(savedToken);
           setIsLoggedIn(true);
           setIsGuest(false);
-          // Background cloud sync verification
+
+          // Verify token against server in background
           MobileApiService.getMe()
             .then((cloudUser) => {
               if (cloudUser) {
                 setUser((prev) => ({ ...prev, ...cloudUser }));
+                setIsSuperAdmin(cloudUser.role === 'super_admin');
                 SafeStorage.setItem('mealfit_user_profile', JSON.stringify(cloudUser));
               }
             })
-            .catch(() => {
-              // Stay logged in locally with cached token & profile
+            .catch((err: any) => {
+              // If token was rejected by server as unauthorized/invalid, log out cleanly
+              if (err?.message?.includes('401') || err?.message?.includes('Unauthorized') || err?.message?.includes('invalid')) {
+                logout();
+              }
             });
         } else {
+          // If token was a mock session, purge it
+          if (savedToken?.startsWith('local_jwt_session_')) {
+            SafeStorage.removeItem('mealfit_auth_token');
+          }
           setIsLoggedIn(false);
-          setIsGuest(false); // Clean unauthenticated state
+          setIsGuest(false);
         }
       } catch (err) {
         console.log('Session load error', err);
@@ -556,64 +567,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = (email: string, fullName?: string) => {
-    const isGovind = email.toLowerCase().includes('govind') || email.toLowerCase().includes('admin');
-    const derivedName = fullName || (isGovind ? 'Govind Sharma' : user.fullName && user.fullName !== 'New Member' ? user.fullName : 'MealFit Member');
-    const updatedUser: UserProfile = {
-      ...user,
-      email,
-      fullName: derivedName,
-      authProvider: 'local',
-      role: isGovind ? 'super_admin' : 'user',
-    };
-    setUser(updatedUser);
-    setIsSuperAdmin(isGovind);
-    SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updatedUser));
-    SafeStorage.setItem('mealfit_auth_token', 'local_jwt_session_' + Date.now());
-    setIsLoggedIn(true);
-    setIsGuest(false);
-    setHasCompletedOnboardingState(true);
+  const login = (_email: string, _fullName?: string) => {
+    // Deprecated fake login method - log warning to encourage loginWithEmail
+    console.warn('[MealFit Auth] Please use loginWithEmail to authenticate securely with JWT.');
   };
 
   const loginWithEmail = async (email: string, password?: string) => {
-    const isGovind = email.toLowerCase().includes('govind') || password === 'govind@1184' || email.toLowerCase().includes('admin');
-    const derivedName = isGovind ? 'Govind Sharma' : user.fullName && user.fullName !== 'New Member' ? user.fullName : 'MealFit Member';
-    try {
-      const res = await MobileApiService.loginUser({ email, password });
-      if (res?.token) {
-        setTokenState(res.token);
-        setAuthToken(res.token);
-        await SafeStorage.setItem('mealfit_auth_token', res.token);
-      }
-      const u = res?.user;
-      const isAdminRole = isGovind || u?.role === 'super_admin' || u?.role === 'admin';
-      const updated: UserProfile = {
-        ...user,
-        id: u?.id || user.id,
-        fullName: u?.fullName || derivedName,
-        email: u?.email || email,
-        gender: u?.gender || user.gender,
-        age: u?.age || user.age,
-        heightCm: u?.heightCm || user.heightCm,
-        weightKg: u?.weightKg || user.weightKg,
-        targetWeightKg: u?.targetWeightKg || user.targetWeightKg,
-        goalType: u?.goalType || user.goalType,
-        city: u?.city || user.city,
-        dietaryPreference: u?.dietaryPreference || user.dietaryPreference,
-        weeklyBudgetInr: u?.weeklyBudgetInr || user.weeklyBudgetInr,
-        authProvider: 'local',
-        role: isAdminRole ? 'super_admin' : 'user',
-      };
-      setUser(updated);
-      setIsSuperAdmin(isAdminRole);
-      await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
-      setIsLoggedIn(true);
-      setIsGuest(false);
-      setHasCompletedOnboardingState(true);
-    } catch (err: any) {
-      // Local fallback so user is never blocked
-      login(email, derivedName);
+    const trimmedEmail = email.trim().toLowerCase();
+    const res = await MobileApiService.loginUser({ email: trimmedEmail, password });
+    
+    if (!res?.token) {
+      throw new Error('Authentication failed: No session token returned.');
     }
+
+    setTokenState(res.token);
+    setAuthToken(res.token);
+    await SafeStorage.setItem('mealfit_auth_token', res.token);
+
+    const u = res.user;
+    const isGovind = u?.email?.toLowerCase().includes('govind') || u?.role === 'super_admin';
+    const updated: UserProfile = {
+      ...user,
+      id: u?.id || user.id,
+      fullName: u?.fullName || user.fullName,
+      email: u?.email || trimmedEmail,
+      gender: u?.gender || user.gender,
+      heightCm: u?.heightCm || user.heightCm,
+      weightKg: u?.weightKg || user.weightKg,
+      targetWeightKg: u?.targetWeightKg || user.targetWeightKg,
+      goalType: u?.goalType || user.goalType,
+      city: u?.city || user.city,
+      dietaryPreference: u?.dietaryPreference || user.dietaryPreference,
+      weeklyBudgetInr: u?.weeklyBudgetInr || user.weeklyBudgetInr,
+      authProvider: 'local',
+      role: u?.role || (isGovind ? 'super_admin' : 'user'),
+    };
+
+    // Recompute accurate targets
+    const targets = calculateRealisticTargets(
+      updated.weightKg,
+      updated.heightCm,
+      updated.age,
+      updated.gender,
+      updated.goalType,
+      updated.targetWeightKg
+    );
+    updated.dailyCalorieTarget = targets.dailyCalorieTarget;
+    updated.proteinTargetG = targets.proteinTargetG;
+    updated.carbsTargetG = targets.carbsTargetG;
+    updated.fatTargetG = targets.fatTargetG;
+    updated.estimatedWeeksToGoal = targets.estimatedWeeksToGoal;
+
+    setUser(updated);
+    setIsSuperAdmin(updated.role === 'super_admin');
+    await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+    setIsLoggedIn(true);
+    setIsGuest(false);
+    setHasCompletedOnboardingState(true);
   };
 
   const registerWithEmail = async (data: {
@@ -624,55 +634,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     weeklyBudgetInr?: number;
     city?: string;
   }) => {
-    try {
-      const res = await MobileApiService.registerUser({
-        fullName: data.fullName,
-        email: data.email,
-        password: data.password,
-        gender: user.gender,
-        heightCm: user.heightCm,
-        weightKg: user.weightKg,
-        targetWeightKg: user.targetWeightKg,
-        goalType: user.goalType,
-        dietaryPreference: data.dietaryPreference || user.dietaryPreference,
-        weeklyBudgetInr: data.weeklyBudgetInr || user.weeklyBudgetInr,
-        city: data.city || user.city,
-        dailyCalorieTarget: user.dailyCalorieTarget,
-        proteinTargetG: user.proteinTargetG,
-        carbsTargetG: user.carbsTargetG,
-        fatTargetG: user.fatTargetG,
-      });
-      if (res?.token) {
-        setTokenState(res.token);
-        setAuthToken(res.token);
-        await SafeStorage.setItem('mealfit_auth_token', res.token);
-      }
-      if (res?.user) {
-        const u = res.user;
-        const updated: Partial<UserProfile> = {
-          id: u.id,
-          fullName: u.fullName,
-          email: u.email,
-          gender: user.gender,
-          age: user.age,
-          heightCm: user.heightCm,
-          weightKg: user.weightKg,
-          targetWeightKg: user.targetWeightKg,
-          dietaryPreference: (u.dietaryPreference as any) || data.dietaryPreference || user.dietaryPreference,
-          weeklyBudgetInr: u.weeklyBudgetInr || data.weeklyBudgetInr || user.weeklyBudgetInr,
-          city: u.city || data.city || user.city,
-          authProvider: 'local',
-        };
-        setUser((prev) => ({ ...prev, ...updated }));
-        await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
-      }
-      setIsLoggedIn(true);
-      setIsGuest(false);
-      setHasCompletedOnboarding(true);
-    } catch (err: any) {
-      login(data.email, data.fullName);
-      setHasCompletedOnboarding(true);
+    const trimmedEmail = data.email.trim().toLowerCase();
+    const res = await MobileApiService.registerUser({
+      fullName: data.fullName.trim(),
+      email: trimmedEmail,
+      password: data.password,
+      gender: user.gender,
+      heightCm: user.heightCm,
+      weightKg: user.weightKg,
+      targetWeightKg: user.targetWeightKg,
+      goalType: user.goalType,
+      dietaryPreference: data.dietaryPreference || user.dietaryPreference,
+      weeklyBudgetInr: data.weeklyBudgetInr || user.weeklyBudgetInr,
+      city: data.city || user.city,
+      dailyCalorieTarget: user.dailyCalorieTarget,
+      proteinTargetG: user.proteinTargetG,
+      carbsTargetG: user.carbsTargetG,
+      fatTargetG: user.fatTargetG,
+    });
+
+    if (!res?.token) {
+      throw new Error('Registration failed: No session token returned.');
     }
+
+    setTokenState(res.token);
+    setAuthToken(res.token);
+    await SafeStorage.setItem('mealfit_auth_token', res.token);
+
+    if (res.user) {
+      const u = res.user;
+      const isGovind = u.email?.toLowerCase().includes('govind') || u.role === 'super_admin';
+      const updated: UserProfile = {
+        ...user,
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        gender: u.gender || user.gender,
+        heightCm: u.heightCm || user.heightCm,
+        weightKg: u.weightKg || user.weightKg,
+        targetWeightKg: u.targetWeightKg || user.targetWeightKg,
+        goalType: u.goalType || user.goalType,
+        dietaryPreference: (u.dietaryPreference as any) || data.dietaryPreference || user.dietaryPreference,
+        weeklyBudgetInr: u.weeklyBudgetInr || data.weeklyBudgetInr || user.weeklyBudgetInr,
+        city: u.city || data.city || user.city,
+        role: u.role || (isGovind ? 'super_admin' : 'user'),
+        authProvider: 'local',
+      };
+      setUser(updated);
+      setIsSuperAdmin(updated.role === 'super_admin');
+      await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+    }
+    setIsLoggedIn(true);
+    setIsGuest(false);
+    setHasCompletedOnboarding(true);
   };
 
   const logout = () => {

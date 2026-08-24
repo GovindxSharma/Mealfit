@@ -14,6 +14,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import { SmartCheatDayModal } from '../../src/components/SmartCheatDayModal';
 import { RewardsHubModal } from '../../src/components/RewardsHubModal';
+import { ActiveUsersMetricsModal } from '../../src/components/ActiveUsersMetricsModal';
 import {
   TrendingUp,
   Award,
@@ -29,14 +30,18 @@ import {
   Scale,
   ChevronRight,
   Utensils,
+  Users,
+  Radio,
+  Activity,
 } from 'lucide-react-native';
 
 export default function AnalyticsScreen() {
   const { theme } = useTheme();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, isSuperAdmin } = useAuth();
   const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
   const [showCheatModal, setShowCheatModal] = useState<boolean>(false);
   const [showRewardsModal, setShowRewardsModal] = useState<boolean>(false);
+  const [showActiveUsersModal, setShowActiveUsersModal] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
   const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
 
@@ -275,7 +280,49 @@ export default function AnalyticsScreen() {
           </View>
         </View>
 
-        {/* 6. Export Monthly PDF Report */}
+        {/* 6. Super Admin & Platform Active Users Telemetry */}
+        <TouchableOpacity
+          onPress={() => setShowActiveUsersModal(true)}
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.card,
+              borderColor: '#10B981',
+              borderWidth: 1.5,
+            },
+          ]}
+          activeOpacity={0.85}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.headerTitleRow}>
+              <View style={[styles.activeLiveBadge, { backgroundColor: '#ECFDF5' }]}>
+                <View style={styles.activeLiveDot} />
+                <Text style={styles.activeLiveBadgeText}>LIVE TELEMETRY</Text>
+              </View>
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Total & Active Users</Text>
+            </View>
+            <ChevronRight size={18} color={theme.textMuted} />
+          </View>
+
+          <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
+            Real-time telemetry showing total registered accounts, today's active members, retention rate, and live user directory.
+          </Text>
+
+          <View style={styles.telemetryQuickRow}>
+            <View style={[styles.telemetryQuickBox, { backgroundColor: theme.backgroundSecondary }]}>
+              <Users size={14} color={theme.primary} />
+              <Text style={[styles.telemetryQuickLabel, { color: theme.textMuted }]}>Registered Users</Text>
+              <Text style={[styles.telemetryQuickVal, { color: theme.textPrimary }]}>Live in DB</Text>
+            </View>
+            <View style={[styles.telemetryQuickBox, { backgroundColor: '#ECFDF5' }]}>
+              <Activity size={14} color="#059669" />
+              <Text style={[styles.telemetryQuickLabel, { color: '#059669' }]}>Active Today</Text>
+              <Text style={[styles.telemetryQuickVal, { color: '#059669' }]}>Tap to Inspect</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* 7. Export Monthly PDF Report */}
         <TouchableOpacity
           onPress={handleExportPdf}
           style={[styles.exportBtn, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
@@ -303,6 +350,11 @@ export default function AnalyticsScreen() {
         visible={showRewardsModal}
         onClose={() => setShowRewardsModal(false)}
         onOpenCheatPlanner={() => setShowCheatModal(true)}
+      />
+
+      <ActiveUsersMetricsModal
+        visible={showActiveUsersModal}
+        onClose={() => setShowActiveUsersModal(false)}
       />
     </View>
   );
@@ -624,6 +676,45 @@ const styles = StyleSheet.create({
   },
   smallRecalibrateText: {
     fontSize: 10.5,
+    fontWeight: '800',
+  },
+  activeLiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  activeLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  activeLiveBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#059669',
+    letterSpacing: 0.4,
+  },
+  telemetryQuickRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  telemetryQuickBox: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 10,
+    gap: 2,
+  },
+  telemetryQuickLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  telemetryQuickVal: {
+    fontSize: 12,
     fontWeight: '800',
   },
 });

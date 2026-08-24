@@ -76,13 +76,13 @@ export async function fetchMobileApi<T>(endpoint: string, options: RequestInit =
 
     clearTimeout(timeoutId);
 
-    if (response.status === 404 && primaryBase !== localDevBase) {
-      // If endpoint is not found on live render (e.g. pending deploy), fallback to local backend!
-      throw new Error(`Endpoint not found on ${primaryBase}`);
-    }
+    const json = await response.json().catch(() => ({}));
 
-    const json = await response.json();
     if (!response.ok && response.status !== 207) {
+      // If this is a 404 route not found (HTML or empty error) and we have local fallback
+      if (response.status === 404 && !json.error && primaryBase !== localDevBase) {
+        throw new Error(`Endpoint not found on ${primaryBase}`);
+      }
       throw new Error(json.error || json.message || `API error: ${response.status}`);
     }
 
@@ -162,6 +162,28 @@ export const MobileApiService = {
     fetchMobileApi<any>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
+    }),
+
+  // Super Admin
+  getAdminUsers: () =>
+    fetchMobileApi<{
+      totalUsers: number;
+      activeToday: number;
+      activeNow: number;
+      activeThisWeek: number;
+      newToday: number;
+      activePercentage: number;
+      roleCounts: {
+        super_admin: number;
+        admin: number;
+        user: number;
+      };
+      users: any[];
+    }>('/auth/admin/users'),
+  updateUserRole: (userId: string, role: string) =>
+    fetchMobileApi<any>(`/auth/admin/users/${userId}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
     }),
 
   // Weather
