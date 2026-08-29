@@ -1,8 +1,10 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { SafeStorage } from './storage';
 
-// Live Render Production URL (Used in standalone APK builds)
-export const RENDER_PRODUCTION_API_URL = 'https://mealfitserviceapi.onrender.com/api';
+// Live Render Production URLs (mealfitbackend is primary backup, mealfitserviceapi resumes Sept 1)
+export const RENDER_PRODUCTION_API_URL = 'https://mealfitbackend.onrender.com/api';
+export const RENDER_FALLBACK_API_URL = 'https://mealfitserviceapi.onrender.com/api';
 
 // Optional Cloudflare tunnel URL
 export const CLOUDFLARE_TUNNEL_URL = 'https://gcc-mrna-bodies-attached.trycloudflare.com/api';
@@ -53,6 +55,17 @@ export const getApiBaseUrl = (): string => {
 export async function fetchMobileApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const primaryBase = getApiBaseUrl();
   const localDevBase = getLocalDevApiUrl();
+  const fallbackRenderBase = RENDER_FALLBACK_API_URL;
+
+  // Auto-restore token from storage if not in memory
+  if (!currentAuthToken) {
+    try {
+      const storedToken = await SafeStorage.getItem('mealfit_auth_token');
+      if (storedToken && !storedToken.startsWith('local_jwt_session_')) {
+        currentAuthToken = storedToken;
+      }
+    } catch {}
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -63,55 +76,62 @@ export async function fetchMobileApi<T>(endpoint: string, options: RequestInit =
     headers['Authorization'] = `Bearer ${currentAuthToken}`;
   }
 
-  // Try primary URL first
-  try {
+  // Helper to attempt fetch on a target base URL
+  const attemptFetch = async (baseUrl: string, timeoutMs: number = 7000): Promise<any> => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const response = await fetch(`${primaryBase}${endpoint}`, {
-      ...options,
-      signal: controller.signal,
-      headers,
-    });
+    try {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        ...options,
+        signal: controller.signal,
+        headers,
+      });
 
-    clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
 
-    const json = await response.json().catch(() => ({}));
+      const json = await response.json().catch(() => ({}));
 
-    if (!response.ok && response.status !== 207) {
-      // If this is a 404 route not found (HTML or empty error) and we have local fallback
-      if (response.status === 404 && !json.error && primaryBase !== localDevBase) {
-        throw new Error(`Endpoint not found on ${primaryBase}`);
+      if (!response.ok && response.status !== 207) {
+        if (response.status === 404 && !json.error) {
+          throw new Error(`Endpoint not found on ${baseUrl}`);
+        }
+        throw new Error(json.error || json.message || `API error: ${response.status}`);
       }
-      throw new Error(json.error || json.message || `API error: ${response.status}`);
+
+      return json.data !== undefined ? json.data : json;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    }
+  };
+
+  // 1. Try Primary Base URL
+  try {
+    return await attemptFetch(primaryBase, 7000);
+  } catch (primaryErr: any) {
+    // 2. If Primary is the local URL or failed, try backup Render URL
+    if (primaryBase !== fallbackRenderBase && primaryBase !== RENDER_PRODUCTION_API_URL) {
+      try {
+        return await attemptFetch(RENDER_PRODUCTION_API_URL, 6000);
+      } catch {}
     }
 
-    return json.data !== undefined ? json.data : json;
-  } catch (primaryErr: any) {
-    // If primary failed (404 or connection error) and we have a local dev fallback
+    // 3. If primary was Render and failed, try secondary fallback Render URL
+    if (primaryBase === RENDER_PRODUCTION_API_URL) {
+      try {
+        return await attemptFetch(fallbackRenderBase, 5000);
+      } catch {}
+    }
+
+    // 4. Try local dev base URL if not already tried
     if (primaryBase !== localDevBase) {
       try {
-        const localController = new AbortController();
-        const localTimeoutId = setTimeout(() => localController.abort(), 4000);
-
-        const localRes = await fetch(`${localDevBase}${endpoint}`, {
-          ...options,
-          signal: localController.signal,
-          headers,
-        });
-
-        clearTimeout(localTimeoutId);
-
-        const localJson = await localRes.json();
-        if (localRes.ok || localRes.status === 207) {
-          return localJson.data !== undefined ? localJson.data : localJson;
-        }
-      } catch (localErr) {
-        // Fall through to throw original error
-      }
+        return await attemptFetch(localDevBase, 4000);
+      } catch {}
     }
 
-    console.warn(`[Mobile API Warning] Failed to fetch ${primaryBase}${endpoint}:`, primaryErr.message);
+    console.warn(`[Mobile API Warning] Failed to fetch ${endpoint} across all backends:`, primaryErr.message);
     throw primaryErr;
   }
 }
@@ -197,11 +217,20 @@ export const MobileApiService = {
   getWorkouts: (equipment?: string) =>
     fetchMobileApi<any>(`/workouts${equipment ? `?equipment=${equipment}` : ''}`),
 
-  // Daily Logs
+  // Daily Logs & Macro Tracking in MongoDB Atlas
   getDailyLogs: (date: string) => fetchMobileApi<any>(`/logs?date=${date}`),
   logMeal: (data: any) =>
-    fetchMobileApi<any>('/logs/meal', {
+    fetchMobileApi<any>('/logs/meals', {
       method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteMeal: (mealId: string, date?: string) =>
+    fetchMobileApi<any>(`/logs/meals/${mealId}${date ? `?date=${date}` : ''}`, {
+      method: 'DELETE',
+    }),
+  updateMetrics: (data: any) =>
+    fetchMobileApi<any>('/logs/metrics', {
+      method: 'PATCH',
       body: JSON.stringify(data),
     }),
 };

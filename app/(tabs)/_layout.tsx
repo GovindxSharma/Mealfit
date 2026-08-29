@@ -1,14 +1,16 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Platform } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useLanguage } from '../../src/context/LanguageContext';
 import { Home, Utensils, Dumbbell, ArrowLeftRight, BarChart2 } from 'lucide-react-native';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 8);
+  const { t } = useLanguage();
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 8);
   const tabHeight = 58 + bottomPadding;
 
   return (
@@ -22,55 +24,86 @@ export default function TabLayout() {
           height: tabHeight,
           paddingBottom: bottomPadding,
           paddingTop: 6,
-          elevation: 4,
+          elevation: 6,
           shadowColor: '#0F172A',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.04,
-          shadowRadius: 8,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
         },
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.textMuted,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '700',
+          marginTop: 2,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Home size={size - 2} color={color} />,
+          title: t('home', 'Home'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.tabIconBox, focused && { backgroundColor: theme.primaryLight }]}>
+              <Home size={size - 3} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="meal-plan"
         options={{
-          title: '₹ Meals',
-          tabBarIcon: ({ color, size }) => <Utensils size={size - 2} color={color} />,
+          title: t('meal_plan', 'Meals'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.tabIconBox, focused && { backgroundColor: theme.primaryLight }]}>
+              <Utensils size={size - 3} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="workout"
         options={{
-          title: 'Workout',
-          tabBarIcon: ({ color, size }) => <Dumbbell size={size - 2} color={color} />,
+          title: t('workout', 'Workout'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.tabIconBox, focused && { backgroundColor: theme.primaryLight }]}>
+              <Dumbbell size={size - 3} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="scanner"
         options={{
-          title: 'Smart Swaps',
-          tabBarIcon: ({ color, size }) => <ArrowLeftRight size={size - 2} color={color} />,
+          title: t('swaps', 'Swaps'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.tabIconBox, focused && { backgroundColor: theme.primaryLight }]}>
+              <ArrowLeftRight size={size - 3} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="analytics"
         options={{
-          title: 'Analytics',
-          tabBarIcon: ({ color, size }) => <BarChart2 size={size - 2} color={color} />,
+          title: t('analytics', 'Analytics'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.tabIconBox, focused && { backgroundColor: theme.primaryLight }]}>
+              <BarChart2 size={size - 3} color={color} />
+            </View>
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabIconBox: {
+    width: 38,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

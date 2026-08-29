@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
+import { DailyRotationService } from '../../src/services/dailyRotationService';
 import {
   ArrowLeftRight,
   Sparkles,
@@ -25,6 +26,7 @@ import {
   Minus,
   Lock,
   ArrowRight,
+  Calendar,
 } from 'lucide-react-native';
 
 export default function SmartSwapsScreen() {
@@ -220,6 +222,52 @@ export default function SmartSwapsScreen() {
         {activeTab === 'swaps' ? (
           /* ================= 1. PROTEIN SWAPS ================= */
           <View style={styles.swapsList}>
+            {/* Daily Rotating Swap of the Day */}
+            {(() => {
+              const todaySwap = DailyRotationService.getDailySmartSwap();
+              return (
+                <View style={[styles.todaySwapHighlightCard, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+                  <View style={styles.todaySwapHeaderRow}>
+                    <View style={[styles.todaySwapTag, { backgroundColor: theme.primary }]}>
+                      <Sparkles size={11} color="#FFFFFF" />
+                      <Text style={styles.todaySwapTagText}>TODAY'S HIGHLIGHT • {todaySwap.dayName.toUpperCase()}</Text>
+                    </View>
+                    <View style={[styles.tagBadge, { backgroundColor: theme.amberLight }]}>
+                      <Text style={[styles.tagBadgeText, { color: theme.amber }]}>{todaySwap.badge}</Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.swapTitle, { color: theme.textPrimary, marginTop: 6 }]}>
+                    {todaySwap.title}
+                  </Text>
+
+                  <View style={styles.compareGrid}>
+                    <View style={[styles.compareBox, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                      <Text style={[styles.compareKicker, { color: theme.rose }]}>CONVENTIONAL</Text>
+                      <Text style={[styles.foodTitle, { color: theme.textPrimary }]}>{todaySwap.original.name}</Text>
+                      <Text style={[styles.foodDetail, { color: theme.textSecondary }]}>
+                        {todaySwap.original.protein} • {todaySwap.original.calories}
+                      </Text>
+                      <Text style={[styles.foodCost, { color: theme.textMuted }]}>{todaySwap.original.cost} / meal</Text>
+                    </View>
+
+                    <View style={[styles.compareBox, { backgroundColor: theme.card, borderColor: theme.primary }]}>
+                      <Text style={[styles.compareKicker, { color: theme.primary }]}>SMART DESI SWAP</Text>
+                      <Text style={[styles.foodTitle, { color: theme.textPrimary }]}>{todaySwap.swapped.name}</Text>
+                      <Text style={[styles.foodDetail, { color: theme.textPrimary }]}>
+                        {todaySwap.swapped.protein} • {todaySwap.swapped.calories}
+                      </Text>
+                      <Text style={[styles.foodCost, { color: theme.primary }]}>{todaySwap.swapped.cost} / meal</Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.swapBenefit, { color: theme.primary, marginTop: 8 }]}>
+                    💡 {todaySwap.benefit}
+                  </Text>
+                </View>
+              );
+            })()}
+
             {smartSwapsList.map((item, idx) => (
               <View
                 key={idx}
@@ -505,6 +553,32 @@ const styles = StyleSheet.create({
   swapsList: {
     gap: 12,
   },
+  todaySwapHighlightCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 10,
+    marginBottom: 4,
+  },
+  todaySwapHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  todaySwapTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 8,
+  },
+  todaySwapTagText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
   swapCard: {
     borderRadius: 18,
     borderWidth: 1,
@@ -533,6 +607,11 @@ const styles = StyleSheet.create({
   swapTitle: {
     fontSize: 15,
     fontWeight: '800',
+  },
+  swapBenefit: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    lineHeight: 16,
   },
   compareGrid: {
     flexDirection: 'row',

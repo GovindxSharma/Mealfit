@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const memoryStore: Record<string, string> = {};
@@ -5,34 +6,71 @@ const memoryStore: Record<string, string> = {};
 export const SafeStorage = {
   getItem: async (key: string): Promise<string | null> => {
     try {
+      const val = await AsyncStorage.getItem(key);
+      if (val !== null && val !== undefined) {
+        memoryStore[key] = val;
+        return val;
+      }
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
-        return window.localStorage.getItem(key);
+        const webVal = window.localStorage.getItem(key);
+        if (webVal !== null) {
+          memoryStore[key] = webVal;
+          return webVal;
+        }
       }
       return memoryStore[key] || null;
     } catch {
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch {}
+      }
       return memoryStore[key] || null;
     }
   },
 
   setItem: async (key: string, value: string): Promise<void> => {
+    memoryStore[key] = value;
     try {
-      memoryStore[key] = value;
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      await AsyncStorage.setItem(key, value);
+    } catch (err) {
+      console.warn(`[SafeStorage] Failed to save key "${key}" to AsyncStorage:`, err);
+    }
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      try {
         window.localStorage.setItem(key, value);
-      }
-    } catch {
-      memoryStore[key] = value;
+      } catch {}
     }
   },
 
   removeItem: async (key: string): Promise<void> => {
+    delete memoryStore[key];
     try {
-      delete memoryStore[key];
-      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      await AsyncStorage.removeItem(key);
+    } catch (err) {
+      console.warn(`[SafeStorage] Failed to remove key "${key}" from AsyncStorage:`, err);
+    }
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      try {
         window.localStorage.removeItem(key);
-      }
-    } catch {
-      delete memoryStore[key];
+      } catch {}
+    }
+  },
+
+  clear: async (): Promise<void> => {
+    for (const k of Object.keys(memoryStore)) {
+      delete memoryStore[k];
+    }
+    try {
+      await AsyncStorage.clear();
+    } catch (err) {
+      console.warn('[SafeStorage] Failed to clear AsyncStorage:', err);
+    }
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.clear();
+      } catch {}
     }
   },
 };
+

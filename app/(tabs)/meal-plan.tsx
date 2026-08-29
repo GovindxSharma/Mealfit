@@ -12,9 +12,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, MealSlot, LoggedMealEntry } from '../../src/context/AuthContext';
+import { useLanguage } from '../../src/context/LanguageContext';
 import { CustomMealModal } from '../../src/components/CustomMealModal';
 import { MasterDietChartModal } from '../../src/components/MasterDietChartModal';
 import { SavedMealsComposerModal } from '../../src/components/SavedMealsComposerModal';
+import { DailyRotationService } from '../../src/services/dailyRotationService';
 import {
   Utensils,
   Plus,
@@ -36,6 +38,7 @@ import {
 
 export default function MealPlanScreen() {
   const { theme } = useTheme();
+  const { language, getLocalizedFoodName, t } = useLanguage();
   const {
     user,
     loggedMealsHistory,
@@ -82,33 +85,56 @@ export default function MealPlanScreen() {
   const currentDayMeals = getMealsForDate(selectedHistoryDate);
   const dayTotals = getDayTotals(selectedHistoryDate);
 
-  // Preset 4-slot budget schedule based on budget
-  const getPresetSchedule = (budget: number) => {
-    if (budget <= 65) {
-      return [
-        { id: 'b_1', slot: 'Breakfast (8:30 AM)', name: 'Chana Sattu Buttermilk (300ml)', hindi: 'चना सत्तू नमकीन छाछ', calories: 220, protein: 22.5, cost: 12 },
-        { id: 'l_1', slot: 'Lunch (1:30 PM)', name: 'Soya Chunks Bhurji + 2 Phulkas + Curd', hindi: 'सोया भुर्जी + 2 रोटी + दही', calories: 460, protein: 34.2, cost: 22 },
-        { id: 's_1', slot: 'Evening Snack (5:30 PM)', name: 'Roasted Peanuts (30g) + Green Tea', hindi: 'भुनी मूंगफली', calories: 170, protein: 7.5, cost: 7 },
-        { id: 'd_1', slot: 'Dinner (8:30 PM)', name: 'Yellow Moong Dal + 2 Phulkas + Salad', hindi: 'मूंग दाल तड़का + 2 रोटी', calories: 380, protein: 18.0, cost: 16 },
-      ];
-    } else if (budget <= 100) {
-      return [
-        { id: 'b_1', slot: 'Breakfast (8:30 AM)', name: 'Sprouted Kala Chana Chaat + Lemon', hindi: 'अंकुरित चना चाट', calories: 260, protein: 16.0, cost: 14 },
-        { id: 'l_1', slot: 'Lunch (1:30 PM)', name: 'Soya Curry + 2 Multigrain Rotis + Ghar Ka Dahi', hindi: 'सोया करी + 2 रोटी + दही', calories: 480, protein: 36.0, cost: 25 },
-        { id: 's_1', slot: 'Evening Snack (5:30 PM)', name: 'Chana Sattu Shake with Roasted Cumin', hindi: 'सत्तू शरबत', calories: 200, protein: 20.0, cost: 12 },
-        { id: 'd_1', slot: 'Dinner (8:30 PM)', name: 'Paneer Bhurji (80g) + 2 Phulkas + Kheera', hindi: 'पनीर भुर्जी + 2 रोटी', calories: 420, protein: 24.5, cost: 35 },
-      ];
-    } else {
-      return [
-        { id: 'b_1', slot: 'Breakfast (8:30 AM)', name: 'Besan Paneer Chilla + Mint Chutney', hindi: 'बेसन पनीर चीला', calories: 320, protein: 22.0, cost: 28 },
-        { id: 'l_1', slot: 'Lunch (1:30 PM)', name: 'Rajma Masala + 1 Bowl Rice + 100g Paneer', hindi: 'राजमा चावल + पनीर', calories: 540, protein: 38.0, cost: 45 },
-        { id: 's_1', slot: 'Evening Snack (5:30 PM)', name: 'Boiled Egg Whites (4) / Sattu Glass', hindi: 'उबले अंडे / सत्तू', calories: 140, protein: 16.5, cost: 24 },
-        { id: 'd_1', slot: 'Dinner (8:30 PM)', name: 'Soya Pulao + Kheera Raita + Dal Tadka', hindi: 'सोया पुलाव + रायता + दाल', calories: 460, protein: 32.0, cost: 32 },
-      ];
-    }
-  };
+  // Dynamic 4-slot daily rotating budget schedule based on selected date & dietary profile
+  const selectedDateObj = new Date(selectedHistoryDate + 'T12:00:00');
+  const dailyDayPlan = DailyRotationService.getDailyMealSchedule(
+    selectedDateObj,
+    user.dietaryPreference,
+    user.weeklyBudgetInr
+  );
 
-  const presetSchedule = getPresetSchedule(budgetPerDay);
+  const presetSchedule = [
+    {
+      id: 'b_1',
+      slot: 'Breakfast (8:30 AM)',
+      name: dailyDayPlan.breakfast.name,
+      hindi: dailyDayPlan.breakfast.hindi,
+      calories: dailyDayPlan.breakfast.calories,
+      protein: dailyDayPlan.breakfast.proteinG,
+      cost: dailyDayPlan.breakfast.costInr,
+      note: dailyDayPlan.breakfast.note,
+    },
+    {
+      id: 'l_1',
+      slot: 'Lunch (1:30 PM)',
+      name: dailyDayPlan.lunch.name,
+      hindi: dailyDayPlan.lunch.hindi,
+      calories: dailyDayPlan.lunch.calories,
+      protein: dailyDayPlan.lunch.proteinG,
+      cost: dailyDayPlan.lunch.costInr,
+      note: dailyDayPlan.lunch.note,
+    },
+    {
+      id: 's_1',
+      slot: 'Evening Snack (5:30 PM)',
+      name: dailyDayPlan.eveningSnack.name,
+      hindi: dailyDayPlan.eveningSnack.hindi,
+      calories: dailyDayPlan.eveningSnack.calories,
+      protein: dailyDayPlan.eveningSnack.proteinG,
+      cost: dailyDayPlan.eveningSnack.costInr,
+      note: dailyDayPlan.eveningSnack.note,
+    },
+    {
+      id: 'd_1',
+      slot: 'Dinner (8:30 PM)',
+      name: dailyDayPlan.dinner.name,
+      hindi: dailyDayPlan.dinner.hindi,
+      calories: dailyDayPlan.dinner.calories,
+      protein: dailyDayPlan.dinner.proteinG,
+      cost: dailyDayPlan.dinner.costInr,
+      note: dailyDayPlan.dinner.note,
+    },
+  ];
 
   const handleShareKiranaList = async () => {
     const listText = `*MealFit 7-Day Indian Kirana Grocery List* (${user.dietaryPreference.toUpperCase()})
@@ -429,14 +455,9 @@ Generated via MealFit India App`;
                   <View style={styles.mealEntryTop}>
                     <View style={{ flex: 1, gap: 2 }}>
                       <View style={styles.mealTitleRow}>
-                        <Text style={[styles.mealEntryName, { color: theme.textPrimary }]}>
-                          {meal.name}
+                        <Text style={[styles.mealEntryName, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
+                          {getLocalizedFoodName(meal)}
                         </Text>
-                        {meal.hindiName && (
-                          <Text style={[styles.mealEntryHindi, { color: theme.textMuted }]}>
-                            {meal.hindiName}
-                          </Text>
-                        )}
                       </View>
                       <View style={styles.mealMetaRow}>
                         <View style={[styles.slotBadge, { backgroundColor: 'rgba(255, 255, 255, 0.05)' }]}>
@@ -592,8 +613,9 @@ Generated via MealFit India App`;
                   </View>
 
                   <View style={styles.scheduleBody}>
-                    <Text style={[styles.scheduleName, { color: theme.textPrimary }]}>{slot.name}</Text>
-                    <Text style={[styles.scheduleHindi, { color: theme.textSecondary }]}>{slot.hindi}</Text>
+                    <Text style={[styles.scheduleName, { color: theme.textPrimary }]} numberOfLines={2}>
+                      {language === 'hi' ? slot.hindi : slot.name}
+                    </Text>
                   </View>
 
                   <View style={styles.scheduleFooter}>

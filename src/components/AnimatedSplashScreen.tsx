@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { Sparkles } from 'lucide-react-native';
-import { useTheme } from '../context/ThemeContext';
+import { ShieldCheck, Sparkles } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,40 +16,66 @@ interface AnimatedSplashScreenProps {
   onFinish: () => void;
 }
 
-export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFinish }) => {
-  const { theme } = useTheme();
+const LOADING_CUES = [
+  'Calibrating Indian nutrition benchmarks...',
+  'Preparing today’s living room workout...',
+  'Syncing hydration & macro goals...',
+  'Welcome to MealFit India',
+];
 
+export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFinish }) => {
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.92)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const fadeOutAnim = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    // 1. Gentle, soothing fade in (800ms)
-    Animated.timing(opacityAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
+  const [cueIndex, setCueIndex] = useState<number>(0);
 
-    // 2. Calm, smooth loading progress bar across 2.4 seconds
+  useEffect(() => {
+    // 1. Smooth Spring & Fade Entrance
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 2. Smooth Loading Progress across 2.1 seconds
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: 2400,
+      duration: 2100,
       useNativeDriver: false,
     }).start();
 
-    // 3. Calm transition to app
+    // 3. Dynamic rotating status cues
+    const cue1 = setTimeout(() => setCueIndex(1), 700);
+    const cue2 = setTimeout(() => setCueIndex(2), 1400);
+    const cue3 = setTimeout(() => setCueIndex(3), 1900);
+
+    // 4. Auto transition into app
     const timer = setTimeout(() => {
       handleComplete();
-    }, 2600);
+    }, 2300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(cue1);
+      clearTimeout(cue2);
+      clearTimeout(cue3);
+      clearTimeout(timer);
+    };
   }, []);
 
   const handleComplete = () => {
     Animated.timing(fadeOutAnim, {
       toValue: 0,
-      duration: 500,
+      duration: 400,
       useNativeDriver: true,
     }).start(() => {
       onFinish();
@@ -66,7 +91,7 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
     <Animated.View
       style={[
         styles.container,
-        { backgroundColor: '#0A0E17', opacity: fadeOutAnim },
+        { backgroundColor: '#0B0F17', opacity: fadeOutAnim },
       ]}
     >
       <TouchableOpacity
@@ -74,8 +99,16 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
         onPress={handleComplete}
         style={styles.touchArea}
       >
-        <Animated.View style={[styles.contentBox, { opacity: opacityAnim }]}>
-          {/* Dynamic Sweeping Vitality Arc Emblem */}
+        <Animated.View
+          style={[
+            styles.contentBox,
+            {
+              opacity: opacityAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
+          {/* Flat, Normal Clean Brand Icon */}
           <View style={styles.logoBadge}>
             <Image
               source={require('../../assets/mealfit_icon_v2.png')}
@@ -84,34 +117,39 @@ export const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onFi
             />
           </View>
 
-          {/* Clean App Title */}
-          <Text style={[styles.brandTitle, { color: '#FFFFFF' }]}>
-            MealFit <Text style={{ color: '#00E599' }}>India</Text>
+          {/* Clean Modern App Title */}
+          <Text style={styles.brandTitle}>
+            MealFit <Text style={styles.brandAccent}>India</Text>
           </Text>
 
-          {/* Soothing Tagline */}
-          <Text style={[styles.tagline, { color: '#94A3B8' }]}>
+          {/* Soothing, Balanced Tagline */}
+          <Text style={styles.tagline}>
             Smart Indian Nutrition & Living Room Fitness
           </Text>
 
-          {/* Calm Loading Progress Line */}
-          <View style={[styles.progressTrack, { backgroundColor: theme.cardBorder }]}>
+          {/* Dynamic Real-time Calibrating Cue */}
+          <Text style={styles.loadingCueText}>
+            {LOADING_CUES[cueIndex]}
+          </Text>
+
+          {/* Refined Loading Progress Line */}
+          <View style={styles.progressTrack}>
             <Animated.View
               style={[
                 styles.progressBar,
                 {
                   width: progressWidth,
-                  backgroundColor: theme.primary,
+                  backgroundColor: '#1488A6',
                 },
               ]}
             />
           </View>
 
-          {/* Subtle ICMR Note */}
+          {/* Trust & Privacy Badge */}
           <View style={styles.footerNote}>
-            <Sparkles size={12} color={theme.primary} />
-            <Text style={[styles.footerText, { color: theme.textMuted }]}>
-              Personalized • 100% Private • Free
+            <ShieldCheck size={13} color="#1488A6" />
+            <Text style={styles.footerText}>
+              Personalized • 100% Private • India-First
             </Text>
           </View>
         </Animated.View>
@@ -144,44 +182,55 @@ const styles = StyleSheet.create({
     paddingHorizontal: 36,
   },
   logoBadge: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
+    width: 80,
+    height: 80,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#00E599',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 10,
   },
   splashIconImage: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
+    width: 80,
+    height: 80,
+    borderRadius: 18,
   },
   brandTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    letterSpacing: -0.6,
+    marginBottom: 6,
     textAlign: 'center',
+    color: '#F8FAFC',
+  },
+  brandAccent: {
+    color: '#1488A6',
   },
   tagline: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '500',
     textAlign: 'center',
-    marginBottom: 28,
-    lineHeight: 20,
+    marginBottom: 18,
+    lineHeight: 18,
+    color: '#94A3B8',
+    letterSpacing: -0.1,
+  },
+  loadingCueText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#1488A6',
+    marginBottom: 12,
+    textAlign: 'center',
+    minHeight: 18,
+    letterSpacing: 0.2,
   },
   progressTrack: {
-    width: 160,
-    height: 4,
+    width: 140,
+    height: 3.5,
     borderRadius: 2,
     overflow: 'hidden',
     marginBottom: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   progressBar: {
     height: '100%',
@@ -191,10 +240,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: 'rgba(20, 136, 166, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(20, 136, 166, 0.18)',
   },
   footerText: {
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    color: '#94A3B8',
   },
 });

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
   MASTER_INDIAN_DIET_CHART,
   MasterDietMeal,
@@ -56,6 +57,7 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const { user, addCustomMeal, toggleMealLogged } = useAuth();
+  const { language, getLocalizedFoodName } = useLanguage();
 
   const [activeGoal, setActiveGoal] = useState<FitnessGoal>(user.goalType || 'fat_loss');
   const [activeDiet, setActiveDiet] = useState<DietType>(user.dietaryPreference || 'veg');
@@ -88,8 +90,9 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
   }, [filteredMeals]);
 
   const handleLogMeal = (meal: MasterDietMeal) => {
+    const displayName = getLocalizedFoodName(meal);
     addCustomMeal({
-      name: meal.name,
+      name: displayName,
       hindiName: meal.hindiName,
       calories: meal.calories,
       proteinG: meal.proteinG,
@@ -100,12 +103,13 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
       costInr: meal.costInr,
     });
     setLoggedIds((prev) => ({ ...prev, [meal.id]: true }));
-    Alert.alert('✅ Meal Logged', `${meal.name} (+${meal.proteinG}g Protein) has been added to today's nutrition ledger!`);
+    Alert.alert('✅ Meal Logged', `${displayName} (+${meal.proteinG}g Protein) has been added to today's nutrition ledger!`);
   };
 
   const handleLogAlternative = (alt: MealAlternative, parentSlot: string) => {
+    const displayName = getLocalizedFoodName(alt);
     addCustomMeal({
-      name: alt.name,
+      name: displayName,
       hindiName: alt.hindiName,
       calories: alt.calories,
       proteinG: alt.proteinG,
@@ -116,7 +120,7 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
       costInr: alt.costInr,
     });
     setLoggedIds((prev) => ({ ...prev, [alt.id]: true }));
-    Alert.alert('Swap Logged', `${alt.name} (+${alt.proteinG}g Protein) has been added to today's ledger.`);
+    Alert.alert('Swap Logged', `${displayName} (+${alt.proteinG}g Protein) has been added to today's ledger.`);
   };
 
   const handleShareDietChart = async () => {
@@ -124,8 +128,8 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
       const mealListText = filteredMeals
         .map(
           (m, idx) =>
-            `${idx + 1}. [${getSlotTitle(m.slot).en} - ${m.recommendedTime}]\n` +
-            `🥗 ${m.name} (${m.hindiName})\n` +
+            `${idx + 1}. [${language === 'hi' ? getSlotTitle(m.slot).hi : getSlotTitle(m.slot).en} - ${m.recommendedTime}]\n` +
+            `🥗 ${getLocalizedFoodName(m)}\n` +
             `⚡ ${m.calories} kcal | P: ${m.proteinG}g | C: ${m.carbsG}g | F: ${m.fatG}g | ₹${m.costInr}\n` +
             `Why: ${m.whyWeAdviseThis}\n`
         )
@@ -340,7 +344,7 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
                         <View style={[styles.slotBadge, { backgroundColor: theme.primaryLight }]}>
                           <Text style={styles.slotIcon}>{slotInfo.icon}</Text>
                           <Text style={[styles.slotName, { color: theme.primary }]}>
-                            {slotInfo.en} • {slotInfo.hi}
+                            {language === 'hi' ? slotInfo.hi : slotInfo.en}
                           </Text>
                         </View>
                         <View style={styles.timeTag}>
@@ -353,12 +357,9 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
 
                       {/* Main Title Row */}
                       <View style={styles.mealTitleRow}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.mealMainTitle, { color: theme.textPrimary }]}>
-                            {meal.name}
-                          </Text>
-                          <Text style={[styles.mealHindiTitle, { color: theme.primary }]}>
-                            {meal.hindiName}
+                        <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                          <Text style={[styles.mealMainTitle, { color: theme.textPrimary }]} numberOfLines={2}>
+                            {getLocalizedFoodName(meal)}
                           </Text>
                         </View>
                         {isExpanded ? (
@@ -474,12 +475,9 @@ export const MasterDietChartModal: React.FC<MasterDietChartModalProps> = ({
                                 ]}
                               >
                                 <View style={styles.altTopRow}>
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={[styles.altName, { color: theme.textPrimary }]}>
-                                      {alt.name}
-                                    </Text>
-                                    <Text style={[styles.altHindi, { color: theme.primary }]}>
-                                      {alt.hindiName}
+                                  <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                                    <Text style={[styles.altName, { color: theme.textPrimary }]} numberOfLines={2}>
+                                      {getLocalizedFoodName(alt)}
                                     </Text>
                                   </View>
                                   <TouchableOpacity

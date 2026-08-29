@@ -280,47 +280,49 @@ export default function AnalyticsScreen() {
           </View>
         </View>
 
-        {/* 6. Super Admin & Platform Active Users Telemetry */}
-        <TouchableOpacity
-          onPress={() => setShowActiveUsersModal(true)}
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.card,
-              borderColor: '#10B981',
-              borderWidth: 1.5,
-            },
-          ]}
-          activeOpacity={0.85}
-        >
-          <View style={styles.cardHeader}>
-            <View style={styles.headerTitleRow}>
-              <View style={[styles.activeLiveBadge, { backgroundColor: '#ECFDF5' }]}>
-                <View style={styles.activeLiveDot} />
-                <Text style={styles.activeLiveBadgeText}>LIVE TELEMETRY</Text>
+        {/* 6. Super Admin & Platform Active Users Telemetry - ONLY visible to Super Admin */}
+        {isSuperAdmin && (
+          <TouchableOpacity
+            onPress={() => setShowActiveUsersModal(true)}
+            style={[
+              styles.card,
+              {
+                backgroundColor: theme.card,
+                borderColor: '#10B981',
+                borderWidth: 1.5,
+              },
+            ]}
+            activeOpacity={0.85}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.headerTitleRow}>
+                <View style={[styles.activeLiveBadge, { backgroundColor: '#ECFDF5' }]}>
+                  <View style={styles.activeLiveDot} />
+                  <Text style={styles.activeLiveBadgeText}>LIVE TELEMETRY</Text>
+                </View>
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Total & Active Users</Text>
               </View>
-              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Total & Active Users</Text>
+              <ChevronRight size={18} color={theme.textMuted} />
             </View>
-            <ChevronRight size={18} color={theme.textMuted} />
-          </View>
 
-          <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
-            Real-time telemetry showing total registered accounts, today's active members, retention rate, and live user directory.
-          </Text>
+            <Text style={[styles.cardDescription, { color: theme.textSecondary }]}>
+              Real-time telemetry showing total registered accounts, today's active members, retention rate, and live user directory.
+            </Text>
 
-          <View style={styles.telemetryQuickRow}>
-            <View style={[styles.telemetryQuickBox, { backgroundColor: theme.backgroundSecondary }]}>
-              <Users size={14} color={theme.primary} />
-              <Text style={[styles.telemetryQuickLabel, { color: theme.textMuted }]}>Registered Users</Text>
-              <Text style={[styles.telemetryQuickVal, { color: theme.textPrimary }]}>Live in DB</Text>
+            <View style={styles.telemetryQuickRow}>
+              <View style={[styles.telemetryQuickBox, { backgroundColor: theme.backgroundSecondary }]}>
+                <Users size={14} color={theme.primary} />
+                <Text style={[styles.telemetryQuickLabel, { color: theme.textMuted }]}>Registered Users</Text>
+                <Text style={[styles.telemetryQuickVal, { color: theme.textPrimary }]}>Live in DB</Text>
+              </View>
+              <View style={[styles.telemetryQuickBox, { backgroundColor: '#ECFDF5' }]}>
+                <Activity size={14} color="#059669" />
+                <Text style={[styles.telemetryQuickLabel, { color: '#059669' }]}>Active Today</Text>
+                <Text style={[styles.telemetryQuickVal, { color: '#059669' }]}>Tap to Inspect</Text>
+              </View>
             </View>
-            <View style={[styles.telemetryQuickBox, { backgroundColor: '#ECFDF5' }]}>
-              <Activity size={14} color="#059669" />
-              <Text style={[styles.telemetryQuickLabel, { color: '#059669' }]}>Active Today</Text>
-              <Text style={[styles.telemetryQuickVal, { color: '#059669' }]}>Tap to Inspect</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        )}
 
         {/* 7. Export Monthly PDF Report */}
         <TouchableOpacity

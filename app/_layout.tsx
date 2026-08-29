@@ -9,6 +9,7 @@ import { NotificationBanner } from '../src/components/NotificationBanner';
 import { NotificationService } from '../src/services/notificationService';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
+import { LanguageProvider } from '../src/context/LanguageContext';
 import { Flame } from 'lucide-react-native';
 
 // Filter benign terminal deprecation warning
@@ -83,7 +84,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <LayoutNavigation />
+          <LanguageProvider>
+            <LayoutNavigation />
+          </LanguageProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

@@ -300,20 +300,16 @@ const styles = StyleSheet.create({
   logoBadge: {
     width: 64,
     height: 64,
-    borderRadius: 20,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 6,
   },
   logoImage: {
     width: 64,
     height: 64,
-    borderRadius: 20,
+    borderRadius: 16,
   },
   brandTitle: {
     fontSize: 24,

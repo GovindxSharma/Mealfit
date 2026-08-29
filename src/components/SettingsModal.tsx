@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, DietaryType, EquipmentType, GoalType } from '../context/AuthContext';
+import { useLanguage, AppLanguage } from '../context/LanguageContext';
 import { NotificationService } from '../services/notificationService';
 import { useRouter } from 'expo-router';
 import {
@@ -35,8 +36,11 @@ import {
   Leaf,
   Egg,
   Scale,
+  Globe,
+  ChevronRight,
 } from 'lucide-react-native';
 import { SecurityVaultModal } from './SecurityVaultModal';
+import { LanguageSelectorModal } from './LanguageSelectorModal';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -55,6 +59,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const { user, isLoggedIn, isSuperAdmin, updateUserProfile, logout } = useAuth();
+  const { language, setLanguage, availableLanguages, currentLanguageMeta, t } = useLanguage();
   const router = useRouter();
 
   const [name, setName] = useState(user.fullName);
@@ -70,6 +75,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [mealNotif, setMealNotif] = useState(user.notifications.meals);
   const [workoutNotif, setWorkoutNotif] = useState(user.notifications.workouts);
   const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
+  const [showLanguageModal, setShowLanguageModal] = useState<boolean>(false);
 
   useEffect(() => {
     setName(user.fullName);
@@ -110,13 +116,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       goalType,
       weightKg: w,
       targetWeightKg: tw,
+      preferredLanguage: language,
       notifications: {
         water: waterNotif,
         meals: mealNotif,
         workouts: workoutNotif,
       },
     });
-    Alert.alert('Profile Saved', 'Your name, goals, and preferences have been updated.');
+    Alert.alert('Profile Saved', 'Your name, language, goals, and preferences have been updated.');
     onClose();
   };
 
@@ -324,6 +331,85 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     ]}
                   />
                 </View>
+              </View>
+            </View>
+
+            {/* App Language Selection with full 13-language selector */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Globe size={15} color={theme.primary} />
+                <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
+                  {t('app_language', 'APP LANGUAGE')} • {currentLanguageMeta.flag} {currentLanguageMeta.nativeLabel}
+                </Text>
+              </View>
+
+              {/* Active Language Bar */}
+              <TouchableOpacity
+                onPress={() => setShowLanguageModal(true)}
+                style={[
+                  styles.activeLangBar,
+                  { backgroundColor: theme.primaryLight, borderColor: theme.primary },
+                ]}
+                activeOpacity={0.8}
+              >
+                <View style={styles.activeLangLeft}>
+                  <Text style={styles.activeLangFlag}>{currentLanguageMeta.flag}</Text>
+                  <View>
+                    <Text style={[styles.activeLangTitle, { color: theme.primary }]}>
+                      {currentLanguageMeta.nativeLabel} ({currentLanguageMeta.label})
+                    </Text>
+                    <Text style={[styles.activeLangSub, { color: theme.textSecondary }]}>
+                      {currentLanguageMeta.region} • Tap to switch among 13 languages
+                    </Text>
+                  </View>
+                </View>
+                <ChevronRight size={18} color={theme.primary} />
+              </TouchableOpacity>
+
+              {/* Quick Language Pills */}
+              <View style={styles.pillRowWrap}>
+                {availableLanguages.slice(0, 6).map((l) => (
+                  <TouchableOpacity
+                    key={l.code}
+                    onPress={() => setLanguage(l.code)}
+                    style={[
+                      styles.dietPill,
+                      {
+                        backgroundColor: language === l.code ? theme.primaryLight : 'rgba(255, 255, 255, 0.03)',
+                        borderColor: language === l.code ? theme.primary : theme.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 13 }}>{l.flag}</Text>
+                    <Text
+                      style={[
+                        styles.dietText,
+                        {
+                          color: language === l.code ? theme.primary : theme.textSecondary,
+                          fontWeight: language === l.code ? '800' : '600',
+                        },
+                      ]}
+                    >
+                      {l.nativeLabel}
+                    </Text>
+                    {language === l.code && <Check size={11} color={theme.primary} strokeWidth={3} />}
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setShowLanguageModal(true)}
+                  style={[
+                    styles.dietPill,
+                    {
+                      backgroundColor: theme.backgroundSecondary,
+                      borderColor: theme.cardBorder,
+                    },
+                  ]}
+                >
+                  <Globe size={12} color={theme.primary} />
+                  <Text style={[styles.dietText, { color: theme.primary, fontWeight: '700' }]}>
+                    + More ({availableLanguages.length} Languages)
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -649,11 +735,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         visible={showSecurityModal}
         onClose={() => setShowSecurityModal(false)}
       />
+      <LanguageSelectorModal
+        visible={showLanguageModal}
+        onClose={() => setShowLanguageModal(false)}
+      />
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  activeLangBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginBottom: 10,
+  },
+  activeLangLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  activeLangFlag: {
+    fontSize: 22,
+  },
+  activeLangTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  activeLangSub: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.65)',
@@ -699,7 +817,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingVertical: 16,
     gap: 16,
-    paddingBottom: 36,
+    paddingBottom: 54,
   },
   accountCard: {
     flexDirection: 'row',

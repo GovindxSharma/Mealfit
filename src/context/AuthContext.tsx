@@ -57,6 +57,7 @@ export interface UserProfile {
   fatTargetG: number;
   estimatedWeeksToGoal: number;
   role: 'user' | 'super_admin';
+  preferredLanguage?: string;
   notifications: {
     water: boolean;
     meals: boolean;
@@ -67,6 +68,7 @@ export interface UserProfile {
 interface AuthContextType {
   isLoggedIn: boolean;
   isGuest: boolean;
+  isLoadingAuth: boolean;
   isSuperAdmin: boolean;
   user: UserProfile;
   authToken: string | null;
@@ -201,18 +203,6 @@ const getTodayDateStr = () => {
   return d.toISOString().split('T')[0];
 };
 
-const getYesterdayDateStr = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split('T')[0];
-};
-
-const getDayBeforeYesterdayStr = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 2);
-  return d.toISOString().split('T')[0];
-};
-
 const initialTargets = calculateRealisticTargets(72, 175, 26, 'male', 'fat_loss', 68);
 
 const defaultGuestUser: UserProfile = {
@@ -244,7 +234,6 @@ const defaultGuestUser: UserProfile = {
 };
 
 const defaultMealsHistory: LoggedMealEntry[] = [
-  // Today
   {
     id: 'entry_today_1',
     name: 'Chana Sattu Buttermilk Shake',
@@ -278,6 +267,7 @@ const defaultMealsHistory: LoggedMealEntry[] = [
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   isGuest: true,
+  isLoadingAuth: true,
   isSuperAdmin: false,
   user: defaultGuestUser,
   authToken: null,
@@ -319,6 +309,7 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isGuest, setIsGuest] = useState<boolean>(true);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
   const [hasCompletedOnboarding, setHasCompletedOnboardingState] = useState<boolean>(false);
   const [user, setUser] = useState<UserProfile>(defaultGuestUser);
@@ -358,77 +349,169 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loggedMealIds, setLoggedMealIds] = useState<string[]>(['breakfast', 'lunch']);
   const [completedExerciseIds, setCompletedExerciseIds] = useState<string[]>(['ex_1', 'ex_2']);
 
-  // Load saved session on startup & verify cloud JWT validity
+  // Load saved session on startup & verify cloud JWT validity with MongoDB Atlas
   useEffect(() => {
     (async () => {
       try {
+        const savedIsLoggedIn = await SafeStorage.getItem('mealfit_is_logged_in');
         const savedToken = await SafeStorage.getItem('mealfit_auth_token');
         const savedUserStr = await SafeStorage.getItem('mealfit_user_profile');
         const savedOnboarded = await SafeStorage.getItem('mealfit_has_onboarded');
-        
+        const savedHistoryStr = await SafeStorage.getItem('mealfit_meals_history');
+        const savedCustomMealsStr = await SafeStorage.getItem('mealfit_saved_custom_meals');
+        const savedLoggedMealIdsStr = await SafeStorage.getItem('mealfit_logged_meals');
+        const savedCompletedExercisesStr = await SafeStorage.getItem('mealfit_completed_exercises');
+
         if (savedOnboarded === 'true') {
           setHasCompletedOnboardingState(true);
         }
 
-        if (savedUserStr) {
+        if (savedHistoryStr) {
           try {
-            const parsed = JSON.parse(savedUserStr);
-            setUser((prev) => {
-              const merged = { ...prev, ...parsed };
-              const targets = calculateRealisticTargets(
-                merged.weightKg || 70,
-                merged.heightCm || 172,
-                merged.age || 26,
-                merged.gender || 'male',
-                merged.goalType || 'fat_loss',
-                merged.targetWeightKg || 65
-              );
-              return {
-                ...merged,
-                dailyCalorieTarget: targets.dailyCalorieTarget,
-                proteinTargetG: targets.proteinTargetG,
-                carbsTargetG: targets.carbsTargetG,
-                fatTargetG: targets.fatTargetG,
-                estimatedWeeksToGoal: targets.estimatedWeeksToGoal,
-              };
-            });
-          } catch (e) {
-            // Ignored
-          }
+            const parsed = JSON.parse(savedHistoryStr);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setLoggedMealsHistory(parsed);
+            }
+          } catch {}
         }
 
-        // Check if token exists and is a valid real JWT (not old mock session)
-        if (savedToken && !savedToken.startsWith('local_jwt_session_')) {
-          setTokenState(savedToken);
-          setAuthToken(savedToken);
+        if (savedCustomMealsStr) {
+          try {
+            const parsed = JSON.parse(savedCustomMealsStr);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setSavedMeals(parsed);
+            }
+          } catch {}
+        }
+
+        if (savedLoggedMealIdsStr) {
+          try {
+            const parsed = JSON.parse(savedLoggedMealIdsStr);
+            if (Array.isArray(parsed)) {
+              setLoggedMealIds(parsed);
+            }
+          } catch {}
+        }
+
+        if (savedCompletedExercisesStr) {
+          try {
+            const parsed = JSON.parse(savedCompletedExercisesStr);
+            if (Array.isArray(parsed)) {
+              setCompletedExerciseIds(parsed);
+            }
+          } catch {}
+        }
+
+        // 1. Restore logged in state if user previously logged in, has active token, or has stored non-guest profile
+        let parsedSavedUser: any = null;
+        if (savedUserStr) {
+          try {
+            parsedSavedUser = JSON.parse(savedUserStr);
+            const targets = calculateRealisticTargets(
+              parsedSavedUser.weightKg || 70,
+              parsedSavedUser.heightCm || 172,
+              parsedSavedUser.age || 26,
+              parsedSavedUser.gender || 'male',
+              parsedSavedUser.goalType || 'fat_loss',
+              parsedSavedUser.targetWeightKg || 65
+            );
+            const userProfile: UserProfile = {
+              ...defaultGuestUser,
+              ...parsedSavedUser,
+              dailyCalorieTarget: targets.dailyCalorieTarget,
+              proteinTargetG: targets.proteinTargetG,
+              carbsTargetG: targets.carbsTargetG,
+              fatTargetG: targets.fatTargetG,
+              estimatedWeeksToGoal: targets.estimatedWeeksToGoal,
+            };
+            setUser(userProfile);
+            const isSuper = userProfile.role === 'super_admin' || userProfile.email?.toLowerCase().includes('govind');
+            setIsSuperAdmin(isSuper);
+          } catch {}
+        }
+
+        const hasValidUserEmail = Boolean(parsedSavedUser?.email && parsedSavedUser.email.trim().length > 0 && parsedSavedUser.authProvider !== 'guest');
+        const shouldBeLoggedIn = savedIsLoggedIn === 'true' || Boolean(savedToken) || hasValidUserEmail;
+
+        if (shouldBeLoggedIn) {
+          if (savedToken) {
+            setTokenState(savedToken);
+            setAuthToken(savedToken);
+          }
           setIsLoggedIn(true);
           setIsGuest(false);
+          // Reinforce persistent flag
+          SafeStorage.setItem('mealfit_is_logged_in', 'true');
 
-          // Verify token against server in background
-          MobileApiService.getMe()
-            .then((cloudUser) => {
-              if (cloudUser) {
-                setUser((prev) => ({ ...prev, ...cloudUser }));
-                setIsSuperAdmin(cloudUser.role === 'super_admin');
-                SafeStorage.setItem('mealfit_user_profile', JSON.stringify(cloudUser));
-              }
-            })
-            .catch((err: any) => {
-              // If token was rejected by server as unauthorized/invalid, log out cleanly
-              if (err?.message?.includes('401') || err?.message?.includes('Unauthorized') || err?.message?.includes('invalid')) {
-                logout();
-              }
-            });
-        } else {
-          // If token was a mock session, purge it
-          if (savedToken?.startsWith('local_jwt_session_')) {
-            SafeStorage.removeItem('mealfit_auth_token');
+          // Verify/refresh profile from MongoDB server in background without blocking or unprompted logout
+          if (savedToken && !savedToken.startsWith('local_jwt_session_')) {
+            MobileApiService.getMe()
+              .then((cloudUser) => {
+                if (cloudUser) {
+                  const isGovind = cloudUser.email?.toLowerCase().includes('govind') || cloudUser.role === 'super_admin';
+                  setUser((prev) => {
+                    const updated: UserProfile = {
+                      ...prev,
+                      ...cloudUser,
+                      role: cloudUser.role || (isGovind ? 'super_admin' : 'user'),
+                    };
+                    SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+                    return updated;
+                  });
+                  setIsSuperAdmin(isGovind);
+                  if (Array.isArray(cloudUser.savedMeals) && cloudUser.savedMeals.length > 0) {
+                    setSavedMeals(cloudUser.savedMeals);
+                    SafeStorage.setItem('mealfit_saved_custom_meals', JSON.stringify(cloudUser.savedMeals));
+                  }
+                }
+              })
+              .catch((err: any) => {
+                // NEVER log out on network/timeout/cold-start glitches! Retain local session permanently.
+                console.log('[MealFit Auth] Background profile sync offline or delayed, retaining persistent local session:', err?.message);
+              });
+
+            // Fetch today's MongoDB Daily Logs in background
+            MobileApiService.getDailyLogs(getTodayDateStr())
+              .then((res: any) => {
+                const cloudMeals = res?.log?.meals;
+                if (Array.isArray(cloudMeals) && cloudMeals.length > 0) {
+                  const formattedEntries: LoggedMealEntry[] = cloudMeals.map((m: any) => ({
+                    id: m.customId || m._id || `entry_${Date.now()}_${Math.random()}`,
+                    name: m.dishName || 'Home Meal',
+                    hindiName: m.hindiName,
+                    calories: m.calories || 0,
+                    proteinG: m.proteinG || 0,
+                    carbsG: m.carbsG || 0,
+                    fatG: m.fatG || 0,
+                    slot: (m.slot || (m.mealType === 'snack' ? 'evening_snack' : m.mealType) || 'lunch') as MealSlot,
+                    quantity: m.quantity || `${m.portionKatoris || 1} Katori`,
+                    costInr: m.costInr || 25,
+                    date: res.log.logDate || getTodayDateStr(),
+                    time: m.time || '12:00 PM',
+                  }));
+
+                  setLoggedMealsHistory((prev) => {
+                    const otherDates = prev.filter((p) => p.date !== getTodayDateStr());
+                    const merged = [...formattedEntries, ...otherDates];
+                    SafeStorage.setItem('mealfit_meals_history', JSON.stringify(merged));
+                    return merged;
+                  });
+
+                  const mealIds = formattedEntries.map((e) => e.id);
+                  setLoggedMealIds(mealIds);
+                  SafeStorage.setItem('mealfit_logged_meals', JSON.stringify(mealIds));
+                }
+              })
+              .catch(() => {});
           }
+        } else {
           setIsLoggedIn(false);
-          setIsGuest(false);
+          setIsGuest(true);
         }
       } catch (err) {
         console.log('Session load error', err);
+      } finally {
+        setIsLoadingAuth(false);
       }
     })();
   }, []);
@@ -461,8 +544,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    const newMealId = `custom_meal_${Date.now()}`;
     const newMeal: LoggedMealEntry = {
-      id: `custom_meal_${Date.now()}`,
+      id: newMealId,
       name: entry.name.trim(),
       hindiName: entry.hindiName,
       calories: Math.max(0, Math.round(entry.calories)),
@@ -476,7 +560,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       time: timeStr,
     };
 
-    setLoggedMealsHistory((prev) => [newMeal, ...prev]);
+    setLoggedMealsHistory((prev) => {
+      const updated = [newMeal, ...prev];
+      SafeStorage.setItem('mealfit_meals_history', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (targetDate === getTodayDateStr()) {
+      setLoggedMealIds((prev) => {
+        const updated = [...prev, newMealId];
+        SafeStorage.setItem('mealfit_logged_meals', JSON.stringify(updated));
+        return updated;
+      });
+    }
+
+    // Sync directly to MongoDB Atlas
+    if (authToken) {
+      MobileApiService.logMeal({
+        customId: newMealId,
+        logDate: targetDate,
+        mealType: entry.slot === 'evening_snack' ? 'snack' : entry.slot,
+        dishName: entry.name.trim(),
+        hindiName: entry.hindiName,
+        calories: Math.max(0, Math.round(entry.calories)),
+        proteinG: Math.max(0, parseFloat(entry.proteinG.toFixed(1))),
+        carbsG: Math.max(0, Math.round(entry.carbsG)),
+        fatG: Math.max(0, Math.round(entry.fatG)),
+        slot: entry.slot,
+        quantity: entry.quantity || '1 Portion',
+        costInr: entry.costInr || 25,
+        time: timeStr,
+      }).catch((err) => console.log('[MongoDB Sync] logMeal sync error:', err));
+    }
   };
 
   const saveCustomMeal = (meal: Omit<SavedCustomMeal, 'id' | 'createdAt'>) => {
@@ -490,12 +605,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       SafeStorage.setItem('mealfit_saved_custom_meals', JSON.stringify(updated));
       return updated;
     });
+
+    // Persist saved repeatable meals to User Profile in MongoDB Atlas
+    if (authToken) {
+      setSavedMeals((prev) => {
+        MobileApiService.updateProfile({ savedMeals: prev }).catch(() => {});
+        return prev;
+      });
+    }
   };
 
   const deleteSavedMeal = (id: string) => {
     setSavedMeals((prev) => {
       const updated = prev.filter((m) => m.id !== id);
       SafeStorage.setItem('mealfit_saved_custom_meals', JSON.stringify(updated));
+      if (authToken) {
+        MobileApiService.updateProfile({ savedMeals: updated }).catch(() => {});
+      }
       return updated;
     });
   };
@@ -517,7 +643,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteLoggedMeal = (id: string) => {
-    setLoggedMealsHistory((prev) => prev.filter((m) => m.id !== id));
+    setLoggedMealsHistory((prev) => {
+      const updated = prev.filter((m) => m.id !== id);
+      SafeStorage.setItem('mealfit_meals_history', JSON.stringify(updated));
+      return updated;
+    });
+    setLoggedMealIds((prev) => {
+      const updated = prev.filter((mid) => mid !== id);
+      SafeStorage.setItem('mealfit_logged_meals', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (authToken) {
+      MobileApiService.deleteMeal(id, selectedHistoryDate).catch(() => {});
+    }
   };
 
   const getMealsForDate = (date: string): LoggedMealEntry[] => {
@@ -568,7 +707,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (_email: string, _fullName?: string) => {
-    // Deprecated fake login method - log warning to encourage loginWithEmail
     console.warn('[MealFit Auth] Please use loginWithEmail to authenticate securely with JWT.');
   };
 
@@ -621,9 +759,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(updated);
     setIsSuperAdmin(updated.role === 'super_admin');
     await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
+    await SafeStorage.setItem('mealfit_has_onboarded', 'true');
+    await SafeStorage.setItem('mealfit_is_logged_in', 'true');
     setIsLoggedIn(true);
     setIsGuest(false);
     setHasCompletedOnboardingState(true);
+
+    if (Array.isArray(u?.savedMeals) && u.savedMeals.length > 0) {
+      setSavedMeals(u.savedMeals);
+      await SafeStorage.setItem('mealfit_saved_custom_meals', JSON.stringify(u.savedMeals));
+    }
+
+    // Fetch and populate today's MongoDB meal logs
+    MobileApiService.getDailyLogs(getTodayDateStr())
+      .then((dailyRes: any) => {
+        const cloudMeals = dailyRes?.log?.meals;
+        if (Array.isArray(cloudMeals) && cloudMeals.length > 0) {
+          const formattedEntries: LoggedMealEntry[] = cloudMeals.map((m: any) => ({
+            id: m.customId || m._id || `entry_${Date.now()}_${Math.random()}`,
+            name: m.dishName || 'Home Meal',
+            hindiName: m.hindiName,
+            calories: m.calories || 0,
+            proteinG: m.proteinG || 0,
+            carbsG: m.carbsG || 0,
+            fatG: m.fatG || 0,
+            slot: (m.slot || (m.mealType === 'snack' ? 'evening_snack' : m.mealType) || 'lunch') as MealSlot,
+            quantity: m.quantity || `${m.portionKatoris || 1} Katori`,
+            costInr: m.costInr || 25,
+            date: dailyRes.log.logDate || getTodayDateStr(),
+            time: m.time || '12:00 PM',
+          }));
+
+          setLoggedMealsHistory((prev) => {
+            const otherDates = prev.filter((p) => p.date !== getTodayDateStr());
+            const merged = [...formattedEntries, ...otherDates];
+            SafeStorage.setItem('mealfit_meals_history', JSON.stringify(merged));
+            return merged;
+          });
+
+          const mealIds = formattedEntries.map((e) => e.id);
+          setLoggedMealIds(mealIds);
+          SafeStorage.setItem('mealfit_logged_meals', JSON.stringify(mealIds));
+        }
+      })
+      .catch(() => {});
   };
 
   const registerWithEmail = async (data: {
@@ -633,17 +812,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dietaryPreference?: DietaryType;
     weeklyBudgetInr?: number;
     city?: string;
+    goalType?: GoalType;
+    gender?: 'male' | 'female';
   }) => {
     const trimmedEmail = data.email.trim().toLowerCase();
     const res = await MobileApiService.registerUser({
       fullName: data.fullName.trim(),
       email: trimmedEmail,
       password: data.password,
-      gender: user.gender,
+      gender: data.gender || user.gender,
       heightCm: user.heightCm,
       weightKg: user.weightKg,
       targetWeightKg: user.targetWeightKg,
-      goalType: user.goalType,
+      goalType: data.goalType || user.goalType,
       dietaryPreference: data.dietaryPreference || user.dietaryPreference,
       weeklyBudgetInr: data.weeklyBudgetInr || user.weeklyBudgetInr,
       city: data.city || user.city,
@@ -684,9 +865,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsSuperAdmin(updated.role === 'super_admin');
       await SafeStorage.setItem('mealfit_user_profile', JSON.stringify(updated));
     }
+    await SafeStorage.setItem('mealfit_is_logged_in', 'true');
     setIsLoggedIn(true);
     setIsGuest(false);
-    setHasCompletedOnboarding(true);
+    await setHasCompletedOnboarding(true);
   };
 
   const logout = () => {
@@ -699,11 +881,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoggedMealIds([]);
     setCompletedExerciseIds([]);
     setLoggedMealsHistory([]);
+    SafeStorage.removeItem('mealfit_is_logged_in');
     SafeStorage.removeItem('mealfit_auth_token');
     SafeStorage.removeItem('mealfit_user_profile');
     SafeStorage.removeItem('mealfit_meals_history');
     SafeStorage.removeItem('mealfit_logged_meals');
     SafeStorage.removeItem('mealfit_completed_exercises');
+    SafeStorage.removeItem('mealfit_saved_custom_meals');
   };
 
   const continueAsGuest = () => {
@@ -793,15 +977,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ) => {
     const exists = loggedMealIds.includes(mealId);
     if (exists) {
-      setLoggedMealIds((prev) => prev.filter((id) => id !== mealId));
-      // Remove any matching today entry if present
-      setLoggedMealsHistory((prev) => prev.filter((m) => m.id !== mealId));
+      setLoggedMealIds((prev) => {
+        const updated = prev.filter((id) => id !== mealId);
+        SafeStorage.setItem('mealfit_logged_meals', JSON.stringify(updated));
+        return updated;
+      });
+      // Remove matching today entry
+      setLoggedMealsHistory((prev) => {
+        const updated = prev.filter((m) => m.id !== mealId);
+        SafeStorage.setItem('mealfit_meals_history', JSON.stringify(updated));
+        return updated;
+      });
+
+      if (authToken) {
+        MobileApiService.deleteMeal(mealId, getTodayDateStr()).catch(() => {});
+      }
     } else {
-      setLoggedMealIds((prev) => [...prev, mealId]);
+      setLoggedMealIds((prev) => {
+        const updated = [...prev, mealId];
+        SafeStorage.setItem('mealfit_logged_meals', JSON.stringify(updated));
+        return updated;
+      });
+
       // Add to today's history
       const newEntry: LoggedMealEntry = {
         id: mealId,
-        name: mealId.replace('quick_meal_', 'Quick Meal ').replace('_', ' ').toUpperCase(),
+        name: mealId.replace('quick_meal_', 'Quick Meal ').replace(/_/g, ' ').toUpperCase(),
         calories,
         proteinG: protein,
         carbsG: carbs,
@@ -812,14 +1013,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         date: getTodayDateStr(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setLoggedMealsHistory((prev) => [newEntry, ...prev]);
+
+      setLoggedMealsHistory((prev) => {
+        const updated = [newEntry, ...prev];
+        SafeStorage.setItem('mealfit_meals_history', JSON.stringify(updated));
+        return updated;
+      });
+
+      if (authToken) {
+        MobileApiService.logMeal({
+          customId: mealId,
+          logDate: getTodayDateStr(),
+          mealType: 'lunch',
+          dishName: newEntry.name,
+          calories,
+          proteinG: protein,
+          carbsG: carbs,
+          fatG: fat,
+          slot: 'lunch',
+          quantity: '1 Serving',
+          costInr: 25,
+          time: newEntry.time,
+        }).catch((err) => console.log('[MongoDB Sync] toggleMeal error:', err));
+      }
     }
   };
 
   const toggleExerciseCompleted = (exerciseId: string, caloriesBurned: number = 35) => {
-    setCompletedExerciseIds((prev) =>
-      prev.includes(exerciseId) ? prev.filter((id) => id !== exerciseId) : [...prev, exerciseId]
-    );
+    setCompletedExerciseIds((prev) => {
+      const updated = prev.includes(exerciseId)
+        ? prev.filter((id) => id !== exerciseId)
+        : [...prev, exerciseId];
+      SafeStorage.setItem('mealfit_completed_exercises', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (authToken) {
+      MobileApiService.updateMetrics({
+        activeCaloriesBurnedDelta: caloriesBurned || 35,
+      }).catch(() => {});
+    }
   };
 
   const unlockSuperAdmin = (pin: string): boolean => {
@@ -841,6 +1074,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         isLoggedIn,
         isGuest,
+        isLoadingAuth,
         isSuperAdmin,
         user,
         authToken,

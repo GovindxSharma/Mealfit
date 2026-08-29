@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MobileApiService } from '../../src/services/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useLanguage } from '../../src/context/LanguageContext';
 import { SettingsModal } from '../../src/components/SettingsModal';
 import { QuickTrialWizard } from '../../src/components/QuickTrialWizard';
 import { LifeStatusModal } from '../../src/components/LifeStatusModal';
@@ -28,6 +29,8 @@ import { MasterDietChartModal } from '../../src/components/MasterDietChartModal'
 import { SmartCheatDayModal } from '../../src/components/SmartCheatDayModal';
 import { RewardsHubModal } from '../../src/components/RewardsHubModal';
 import { SavedMealsComposerModal } from '../../src/components/SavedMealsComposerModal';
+import { LanguageSelectorModal } from '../../src/components/LanguageSelectorModal';
+import { DailyRotationService } from '../../src/services/dailyRotationService';
 import { NotificationService } from '../../src/services/notificationService';
 import { HapticService } from '../../src/services/hapticService';
 import { SoundService } from '../../src/services/soundService';
@@ -56,6 +59,7 @@ import {
   Bookmark,
   RotateCcw,
   Scale,
+  Globe,
 } from 'lucide-react-native';
 
 export default function HomeScreen() {
@@ -72,6 +76,7 @@ export default function HomeScreen() {
   } = useAuth();
 
   const { theme } = useTheme();
+  const { language, t, currentLanguageMeta } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const topSafeDistance = Math.max(insets.top, Platform.OS === 'android' ? 28 : 20) + 12;
@@ -93,6 +98,7 @@ export default function HomeScreen() {
   const [showDietChartModal, setShowDietChartModal] = useState<boolean>(false);
   const [showCheatModal, setShowCheatModal] = useState<boolean>(false);
   const [showRewardsModal, setShowRewardsModal] = useState<boolean>(false);
+  const [showLanguageModal, setShowLanguageModal] = useState<boolean>(false);
 
   // Volumetric logger state
   const [katoriCount, setKatoriCount] = useState<number>(2);
@@ -167,17 +173,21 @@ export default function HomeScreen() {
   const getGoalDisplayTitle = (g: string) => {
     switch (g) {
       case 'fat_loss':
-        return 'Fat Loss & Belly Trim';
+        return language === 'hi' ? 'फैट लॉस' : 'Fat Loss & Belly Trim';
       case 'muscle_gain':
-        return 'Lean Muscle Building';
+        return language === 'hi' ? 'मसल गेन' : 'Lean Muscle Building';
       case 'recomp':
-        return 'Body Recomposition';
+        return language === 'hi' ? 'बॉडी रिकम्प' : 'Body Recomposition';
       case 'low_gi_pcod':
-        return 'Low GI & PCOD Control';
+        return language === 'hi' ? 'लो जीआई / पीसीओडी' : 'Low GI & PCOD Control';
       default:
-        return 'Personalized Plan';
+        return language === 'hi' ? 'निजी योजना' : 'Personalized Plan';
     }
   };
+
+  const todayWorkout = DailyRotationService.getDailyWorkout();
+  const todayMealPlan = DailyRotationService.getDailyMealSchedule(new Date(), user.dietaryPreference, user.weeklyBudgetInr);
+  const todayCoach = DailyRotationService.getDailyCoachInsight();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -201,7 +211,7 @@ export default function HomeScreen() {
               </View>
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.greetingTitle, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
-                  {user.fullName && user.fullName !== 'New Member' ? `Namaste, ${user.fullName.split(' ')[0]}` : 'Namaste, Warrior'}
+                  {user.fullName && user.fullName !== 'New Member' ? `${t('namaste', 'Namaste')}, ${user.fullName.split(' ')[0]}` : `${t('namaste', 'Namaste')}, Warrior`}
                 </Text>
                 <View style={styles.roleRow}>
                   <View style={[styles.onlineDot, { backgroundColor: user.role === 'super_admin' ? theme.indigo : theme.primary }]} />
@@ -227,14 +237,26 @@ export default function HomeScreen() {
                 <Text style={[styles.greetingTitle, { color: theme.textPrimary }]} numberOfLines={1}>MealFit</Text>
                 <View style={styles.roleRow}>
                   <View style={[styles.onlineDot, { backgroundColor: theme.amber }]} />
-                  <Text style={[styles.roleText, { color: theme.textSecondary }]} numberOfLines={1}>Guest Mode</Text>
+                  <Text style={[styles.roleText, { color: theme.textSecondary }]} numberOfLines={1}>{t('guest_mode', 'Guest Mode')}</Text>
                 </View>
               </View>
             </TouchableOpacity>
           )}
 
-          {/* Right Header Action Buttons: Weather + Settings Button */}
+          {/* Right Header Action Buttons: Language + Weather + Settings Button */}
           <View style={styles.headerActionRow}>
+            {/* Quick Language Pill */}
+            <TouchableOpacity
+              onPress={() => setShowLanguageModal(true)}
+              style={[styles.langHeaderBadge, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13 }}>{currentLanguageMeta.flag}</Text>
+              <Text style={[styles.langHeaderBadgeText, { color: theme.textPrimary }]}>
+                {currentLanguageMeta.code.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+
             {/* Weather / Location Pill */}
             <TouchableOpacity
               onPress={() => setShowLocationModal(true)}
@@ -310,12 +332,19 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Clean Macro Progress Bars */}
+          {/* Clean Macro Progress Bars with Percentage Pills */}
           <View style={styles.macroContainer}>
             {/* Protein */}
             <View style={styles.macroBlock}>
               <View style={styles.macroHeader}>
-                <Text style={[styles.macroName, { color: theme.textSecondary }]}>Protein Target</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.macroName, { color: theme.textSecondary }]}>Protein Target</Text>
+                  <View style={[styles.pctBadge, { backgroundColor: theme.primaryLight }]}>
+                    <Text style={[styles.pctBadgeText, { color: theme.primary }]}>
+                      {Math.min(100, Math.round((currentProteinLogged / Math.max(1, proteinTarget)) * 100))}%
+                    </Text>
+                  </View>
+                </View>
                 <Text style={[styles.macroAmount, { color: theme.primary }]}>
                   {Math.round(currentProteinLogged)} / {proteinTarget}g
                 </Text>
@@ -325,7 +354,7 @@ export default function HomeScreen() {
                   style={[
                     styles.progressBarFill,
                     {
-                      width: `${Math.min(100, (currentProteinLogged / proteinTarget) * 100)}%`,
+                      width: `${Math.min(100, (currentProteinLogged / Math.max(1, proteinTarget)) * 100)}%`,
                       backgroundColor: theme.primary,
                     },
                   ]}
@@ -336,7 +365,14 @@ export default function HomeScreen() {
             {/* Carbs */}
             <View style={styles.macroBlock}>
               <View style={styles.macroHeader}>
-                <Text style={[styles.macroName, { color: theme.textSecondary }]}>Carbohydrates</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.macroName, { color: theme.textSecondary }]}>Carbohydrates</Text>
+                  <View style={[styles.pctBadge, { backgroundColor: theme.amberLight }]}>
+                    <Text style={[styles.pctBadgeText, { color: theme.amber }]}>
+                      {Math.min(100, Math.round((currentCarbsLogged / Math.max(1, carbsTarget)) * 100))}%
+                    </Text>
+                  </View>
+                </View>
                 <Text style={[styles.macroAmount, { color: theme.amber }]}>
                   {Math.round(currentCarbsLogged)} / {carbsTarget}g
                 </Text>
@@ -346,7 +382,7 @@ export default function HomeScreen() {
                   style={[
                     styles.progressBarFill,
                     {
-                      width: `${Math.min(100, (currentCarbsLogged / carbsTarget) * 100)}%`,
+                      width: `${Math.min(100, (currentCarbsLogged / Math.max(1, carbsTarget)) * 100)}%`,
                       backgroundColor: theme.amber,
                     },
                   ]}
@@ -357,7 +393,14 @@ export default function HomeScreen() {
             {/* Fats */}
             <View style={styles.macroBlock}>
               <View style={styles.macroHeader}>
-                <Text style={[styles.macroName, { color: theme.textSecondary }]}>Healthy Fats</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.macroName, { color: theme.textSecondary }]}>Healthy Fats</Text>
+                  <View style={[styles.pctBadge, { backgroundColor: theme.roseLight }]}>
+                    <Text style={[styles.pctBadgeText, { color: theme.rose }]}>
+                      {Math.min(100, Math.round((currentFatLogged / Math.max(1, fatTarget)) * 100))}%
+                    </Text>
+                  </View>
+                </View>
                 <Text style={[styles.macroAmount, { color: theme.rose }]}>
                   {Math.round(currentFatLogged)} / {fatTarget}g
                 </Text>
@@ -367,7 +410,7 @@ export default function HomeScreen() {
                   style={[
                     styles.progressBarFill,
                     {
-                      width: `${Math.min(100, (currentFatLogged / fatTarget) * 100)}%`,
+                      width: `${Math.min(100, (currentFatLogged / Math.max(1, fatTarget)) * 100)}%`,
                       backgroundColor: theme.rose,
                     },
                   ]}
@@ -399,7 +442,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 3. Two High-Impact Quick Launch Action Cards */}
+        {/* 3. High-Impact Quick Launch Action Cards (Dynamic Daily Rotation) */}
         <View style={styles.actionGrid}>
           {/* Today's Workout Card */}
           <TouchableOpacity
@@ -411,11 +454,11 @@ export default function HomeScreen() {
               <Dumbbell size={22} color={theme.indigo} />
             </View>
             <View style={styles.actionTextBox}>
-              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>Living Room Workout</Text>
-              <Text style={[styles.actionSub, { color: theme.textSecondary }]}>
-                {user.equipment.includes('dumbbells')
-                  ? 'Dumbbells & Floor • 3s Tempo'
-                  : 'Apartment Safe • Zero Noise'}
+              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>
+                {todayWorkout.dayName} Workout Split
+              </Text>
+              <Text style={[styles.actionSub, { color: theme.textSecondary }]} numberOfLines={1}>
+                {todayWorkout.focusTitle} • ~{todayWorkout.burnEstimateKcal} kcal
               </Text>
             </View>
             <View style={styles.actionArrowCircle}>
@@ -433,9 +476,11 @@ export default function HomeScreen() {
               <Utensils size={22} color={theme.primary} />
             </View>
             <View style={styles.actionTextBox}>
-              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>Budget Indian Meals</Text>
-              <Text style={[styles.actionSub, { color: theme.textSecondary }]}>
-                {user.dietaryPreference.toUpperCase()} • Meal Diary & Plan
+              <Text style={[styles.actionHeading, { color: theme.textPrimary }]}>
+                {todayMealPlan.dayName} ₹ Diet Plan
+              </Text>
+              <Text style={[styles.actionSub, { color: theme.textSecondary }]} numberOfLines={1}>
+                {todayMealPlan.totalProteinG}g Protein • ₹{todayMealPlan.totalCostInr}/day ({user.dietaryPreference.toUpperCase()})
               </Text>
             </View>
             <View style={styles.actionArrowCircle}>
@@ -689,12 +734,31 @@ export default function HomeScreen() {
         <View style={[styles.waterCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={styles.waterHeader}>
             <View style={styles.waterTitleRow}>
-              <Droplets size={16} color={theme.cyan} />
-              <Text style={[styles.sectionHeading, { color: theme.textMuted }]}>DAILY WATER TRACKER</Text>
+              <View style={[styles.waterIconCircle, { backgroundColor: theme.cyanLight }]}>
+                <Droplets size={16} color={theme.cyan} />
+              </View>
+              <View>
+                <Text style={[styles.sectionHeading, { color: theme.textMuted }]}>DAILY WATER TRACKER</Text>
+                <Text style={[styles.waterAmountText, { color: theme.textPrimary }]}>
+                  {waterGlasses * 250}{' '}
+                  <Text style={{ color: theme.textMuted, fontSize: 12, fontWeight: '600' }}>
+                    / {weather?.recommendedWaterMl || 3200} mL
+                  </Text>
+                </Text>
+              </View>
             </View>
-            <Text style={[styles.waterAmountText, { color: theme.cyan }]}>
-              {waterGlasses * 250} / {weather?.recommendedWaterMl || 3200} mL
-            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setWaterGlasses((prev) => Math.min(16, prev + 1));
+                HapticService.light();
+                SoundService.playWaterDrop().catch(() => {});
+              }}
+              style={[styles.waterAddQuickBtn, { backgroundColor: theme.cyanLight, borderColor: 'rgba(20, 136, 166, 0.3)' }]}
+              activeOpacity={0.8}
+            >
+              <Plus size={13} color={theme.cyan} />
+              <Text style={[styles.waterAddQuickText, { color: theme.cyan }]}>+250 mL</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.glassesGrid}>
@@ -799,6 +863,10 @@ export default function HomeScreen() {
         visible={showSavedMealsModal}
         onClose={() => setShowSavedMealsModal(false)}
       />
+      <LanguageSelectorModal
+        visible={showLanguageModal}
+        onClose={() => setShowLanguageModal(false)}
+      />
     </View>
   );
 }
@@ -885,6 +953,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     flexShrink: 0,
+  },
+  langHeaderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  langHeaderBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   weatherBadge: {
     flexDirection: 'row',
@@ -1045,6 +1127,15 @@ const styles = StyleSheet.create({
   macroName: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  pctBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  pctBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
   },
   macroAmount: {
     fontSize: 12,
@@ -1345,10 +1436,30 @@ const styles = StyleSheet.create({
   waterTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+  },
+  waterIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waterAddQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  waterAddQuickText: {
+    fontSize: 11.5,
+    fontWeight: '800',
   },
   waterAmountText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
   },
   glassesGrid: {

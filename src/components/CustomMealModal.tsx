@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth, MealSlot } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { HapticService } from '../services/hapticService';
 import { SoundService } from '../services/soundService';
 import {
@@ -44,6 +45,7 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
 }) => {
   const { theme } = useTheme();
   const { addCustomMeal, selectedHistoryDate } = useAuth();
+  const { language, getLocalizedFoodName } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'search' | 'custom'>('search');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -81,8 +83,9 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
   };
 
   const handleAddPreset = (food: IndianFoodItem) => {
+    const displayName = getLocalizedFoodName(food);
     addCustomMeal({
-      name: food.name,
+      name: displayName,
       hindiName: food.hindiName,
       calories: food.calories,
       proteinG: food.proteinG,
@@ -330,16 +333,11 @@ export const CustomMealModal: React.FC<CustomMealModalProps> = ({
                     ]}
                     activeOpacity={0.75}
                   >
-                    <View style={{ flex: 1, gap: 3 }}>
-                      <View style={styles.foodNameRow}>
-                        <Text style={[styles.foodName, { color: theme.textPrimary }]}>
-                          {food.name}
-                        </Text>
-                        <Text style={[styles.foodHindi, { color: theme.textMuted }]}>
-                          {food.hindiName}
-                        </Text>
-                      </View>
-                      <Text style={[styles.foodMeta, { color: theme.textSecondary }]}>
+                    <View style={{ flex: 1, minWidth: 0, gap: 3, paddingRight: 8 }}>
+                      <Text style={[styles.foodName, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
+                        {getLocalizedFoodName(food)}
+                      </Text>
+                      <Text style={[styles.foodMeta, { color: theme.textSecondary }]} numberOfLines={1}>
                         {food.servingSize} • ₹{food.costInr}
                       </Text>
                     </View>

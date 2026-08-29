@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth, EquipmentType } from '../../src/context/AuthContext';
+import { useLanguage } from '../../src/context/LanguageContext';
 import { AuthRequiredModal } from '../../src/components/AuthRequiredModal';
 import { WorkoutAnimationCard } from '../../src/components/WorkoutAnimationCard';
 import {
@@ -48,6 +49,7 @@ interface Exercise {
 
 export default function WorkoutScreen() {
   const { theme } = useTheme();
+  const { language, t } = useLanguage();
   const { user, completedExerciseIds, toggleExerciseCompleted, isLoggedIn } = useAuth();
   const [selectedPhase, setSelectedPhase] = useState<'all' | 'warmup' | 'cardio' | 'strength' | 'cooldown'>('all');
   const [selectedSplit, setSelectedSplit] = useState<'full_body' | 'push' | 'pull' | 'legs'>('full_body');
@@ -528,13 +530,15 @@ export default function WorkoutScreen() {
                 </Text>
               </View>
 
-              {/* Title & Hindi Subtitle */}
-              <Text style={[styles.exerciseName, { color: theme.textPrimary }]}>
+              {/* Title & Single Cue */}
+              <Text style={[styles.exerciseName, { color: theme.textPrimary }]} numberOfLines={2}>
                 {exercise.name}
               </Text>
-              <Text style={[styles.exerciseHindi, { color: theme.primary }]}>
-                {exercise.hindiCue}
-              </Text>
+              {language === 'hi' && exercise.hindiCue ? (
+                <Text style={[styles.exerciseHindi, { color: theme.primary }]} numberOfLines={1}>
+                  {exercise.hindiCue}
+                </Text>
+              ) : null}
 
               {/* Specs Grid: Sets, Reps, Tempo */}
               <View style={[styles.specsGrid, { backgroundColor: theme.backgroundSecondary }]}>
